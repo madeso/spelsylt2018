@@ -1,2 +1,4 @@
 # spelsylt2018
-my entry in the kodsnack spelsylt gamejam
+My entry in the kodsnack spelsylt gamejam
+
+Day 1: 0.5 hours. Basic project structure and build/upload script.
