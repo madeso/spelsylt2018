@@ -14,6 +14,34 @@ load_level = function(path)
   player.y = 0
 end
 
+plusminus = function(plus, minus)
+  if plus then
+    if minus then
+      return 0
+    else
+      return 1
+    end
+  end
+  if minus then
+    return -1
+  end
+  return 0
+end
+
+onkey = function(key, down)
+  if key == "left" then
+    input_left = down
+  end
+  if key == "right" then
+    input_right = down
+  end
+end
+
+player_update = function(dt)
+  local p = player
+  p.x = p.x + plusminus(input_right, input_left)
+end
+
 --------------------------------------------------------------
 
 LIGHT_BG = {r= 196, g= 208, b= 162}
@@ -24,6 +52,9 @@ sprites = love.graphics.newImage("sprites.png")
 idle_sprite = make_sprite(0)
 player = {x=0, y=0}
 load_level("level1.lua")
+
+input_left = false
+input_right = false
 --------------------------------------------------------------
 
 love.load = function()
@@ -42,4 +73,14 @@ end
 love.update = function()
   -- DEBUG CODE
   require("lurker").update()
+  player_update()
 end
+
+love.keypressed = function(key)
+  onkey(key, true)
+end
+
+love.keyreleased = function(key)
+  onkey(key, false)
+end
+
