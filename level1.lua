@@ -1,7 +1,7 @@
 return {
   version = "1.1",
   luaversion = "5.1",
-  tiledversion = "1.1.5",
+  tiledversion = "0.17.0",
   orientation = "orthogonal",
   renderorder = "right-down",
   width = 80,
@@ -24,11 +24,6 @@ return {
       tileoffset = {
         x = 0,
         y = 0
-      },
-      grid = {
-        orientation = "orthogonal",
-        width = 32,
-        height = 32
       },
       properties = {},
       terrains = {
@@ -98,7 +93,7 @@ return {
   layers = {
     {
       type = "tilelayer",
-      name = "Tile Layer 1",
+      name = "col",
       x = 0,
       y = 0,
       width = 80,
@@ -107,7 +102,9 @@ return {
       opacity = 1,
       offsetx = 0,
       offsety = 0,
-      properties = {},
+      properties = {
+        ["collidable"] = true
+      },
       encoding = "lua",
       data = {
         8, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 8, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 8,
