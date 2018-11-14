@@ -11,18 +11,14 @@ draw_sprite = function(q, x, y)
 end
 
 load_level = function(path)
-  print("a")
   level_gfx = sti(path, {"bump"})
-  print("b")
   level_collision = bump.newWorld(32 * 2)
   player.x = 90
   player.y = 0
+  player.vely = 0
   -- todo: setup player collision box
-  print("knas")
   level_collision:add(player, player.x, player.y, 32, 32)
-  print("dog")
   level_gfx:bump_init(level_collision)
-  print("cat")
 end
 
 plusminus = function(plus, minus)
@@ -46,6 +42,9 @@ onkey = function(key, down)
   if key == "right" then
     input_right = down
   end
+  if key == "up" then
+    input_jump = down
+  end
   if key == "tab" and down then
     debug_draw = not debug_draw
   end
@@ -54,13 +53,44 @@ end
 player_update = function(dt)
   local input_movement = plusminus(input_right, input_left)
   local movement_hor = input_movement * dt * PLAYER_SPEED
+  local ground_collision_count
+  if not player.vely then player.vely = 0 end
+  player.vely = player.vely + GRAVITY * dt
+
+  if input_jump and jump_timer < JUMP_TIME then
+    player.vely = -JUMP_SPEED
+  end
+  -- increase jump timer or set it beyond the max when released, so release+hold wont rejump
+  if input_jump then
+    jump_timer = jump_timer + dt
+  else
+    jump_timer = JUMP_TIME + 1
+  end
+
+  player.x, player.y, _, ground_collision_count = level_collision:move(player, player.x, player.y + player.vely*dt)
+  local is_on_ground = ground_collision_count > 0 and player.vely >= 0
+  if ground_collision_count > 0 then
+    player.vely = 0
+    jump_timer = JUMP_TIME + 1
+  end
+  if is_on_ground then
+    jump_timer = 0
+  end
   player.x, player.y = level_collision:move(player, player.x + movement_hor, player.y)
+
+  -- this if stops the infinite-jump when holding down the jump button
+  if input_jump and jump_timer > JUMP_TIME then
+    input_jump = false
+  end
 end
 
 --------------------------------------------------------------
 
 -- gameplay tweaks
-PLAYER_SPEED = 32
+PLAYER_SPEED = 100
+GRAVITY = 600
+JUMP_SPEED = 200
+JUMP_TIME = 0.5
 
 LIGHT_BG = {r= 196, g= 208, b= 162}
 DEFAULT_BG = {r= 131, g= 142, b= 102}
@@ -68,15 +98,17 @@ DEFAULT_BG = {r= 131, g= 142, b= 102}
 love.graphics.setDefaultFilter("nearest", "nearest")
 sprites = love.graphics.newImage("sprites.png")
 idle_sprite = make_sprite(0)
-player = {x=0, y=0}
-load_level("level1.lua")
 
 debug_draw = false
 input_left = false
 input_right = false
+
+jump_timer = 0
 --------------------------------------------------------------
 
 love.load = function()
+  player = {x=0, y=0, vely=0}
+  load_level("level1.lua")
 end
 
 love.draw = function()
