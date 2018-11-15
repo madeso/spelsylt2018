@@ -83,8 +83,9 @@ end
 load_level = function(path)
   level_gfx = sti(path, {"bump"})
   level_collision = bump.newWorld(32 * 2)
-  player.x = 90
-  player.y = 0
+  start_position.x = 90
+  start_position.y = 0
+  player.x, player.y = start_position.x, start_position.y
   player.vely = 0
   -- todo: setup player collision box
   level_collision:add(player, player.x, player.y, 32, 32)
@@ -106,6 +107,11 @@ onkey = function(key, down)
   end
   if key == "tab" and down then
     debug_draw = not debug_draw
+  end
+  if key == "r" and not down then
+    player.x = start_position.x
+    player.y = start_position.y
+    level_collision:update(player, player.x, player.y)
   end
 end
 
@@ -177,6 +183,7 @@ on_ground_timer = 0
 
 love.load = function()
   player = {x=0, y=0, vely=0}
+  start_position = {x=0, y=0}
   load_level("level1.lua")
 end
 
