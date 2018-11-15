@@ -5,4 +5,6 @@ Day 1: 0.5 hours. Basic project structure and build/upload script.
 
 Day 2: 1 hour. Basic tileset and simple test level.
 
-Day 3: 3.5 hours. Started on tileset. Added basic platformer code, walk/run and jumping. Static sprite.
+Day 3: 3.5 hours. Started on sprites. Added basic platformer code, walk/run and jumping. Static sprite.
+
+Day 4: 3 hours. Added wallsliding and walljumping, Really basic pause screen and a debug printing.
