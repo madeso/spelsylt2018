@@ -15,6 +15,8 @@ ON_GROUND_REACTION = 0.1
 GROUND_FRICTION = 3
 AIR_CONTROL = 0.2
 ACCELERATION = 3
+WALLSLIDE = 50
+WALLSLIDE_SPEED = 1900
 
 LIGHT_BG   = {r=196, g=208, b=162}
 DEFAULT_BG = {r=131, g=142, b=102}
@@ -193,6 +195,13 @@ player_update = function(dt)
 
   if touches_wall then
     player.velx = 0
+  end
+
+  if has_moved_hor and touches_wall and player.vely > WALLSLIDE then
+    player.vely = player.vely - WALLSLIDE_SPEED * dt
+    if player.vely <= WALLSLIDE then
+      player.vely = WALLSLIDE
+    end
   end
 
   -- this if stops the infinite-jump when holding down the jump button
