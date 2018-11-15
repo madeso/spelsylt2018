@@ -17,6 +17,8 @@ AIR_CONTROL = 0.2
 ACCELERATION = 3
 WALLSLIDE = 50
 WALLSLIDE_SPEED = 1900
+WALLJUMP = 150
+WALLJUMP_ACCELERATION = 0.7
 
 LIGHT_BG   = {r=196, g=208, b=162}
 DEFAULT_BG = {r=131, g=142, b=102}
@@ -132,7 +134,11 @@ player_update = function(dt)
   player.vely = player.vely + GRAVITY * dt
 
   if input_jump and jump_timer < JUMP_TIME then
-    player.vely = -JUMP_SPEED
+    if not is_walljumping then
+      player.vely = -JUMP_SPEED
+    else
+      player.vely = -WALLJUMP
+    end
   end
   -- increase jump timer or set it beyond the max when released, so release+hold wont rejump
   if input_jump then
@@ -148,6 +154,7 @@ player_update = function(dt)
   local is_on_ground = ground_collision_count > 0 and player.vely >= 0
   if is_on_ground then
     on_ground_timer = 0
+    is_walljumping = false
   else
     on_ground_timer = on_ground_timer + dt
   end
@@ -197,10 +204,25 @@ player_update = function(dt)
     player.velx = 0
   end
 
+  local sliding = false
   if has_moved_hor and touches_wall and player.vely > WALLSLIDE then
     player.vely = player.vely - WALLSLIDE_SPEED * dt
+    sliding = true
     if player.vely <= WALLSLIDE then
       player.vely = WALLSLIDE
+    end
+  end
+
+  if sliding and input_jump then
+    sliding = false
+    jump_timer = 0
+    is_on_ground = false
+    player.vely = WALLJUMP
+    is_walljumping = true
+    if input_movement > 0 then
+      player.velx = -WALLJUMP_ACCELERATION
+    else
+      player.velx = WALLJUMP_ACCELERATION
     end
   end
 
@@ -225,7 +247,7 @@ game_is_paused = false
 
 jump_timer = 0
 on_ground_timer = 0
-
+is_walljumping = false
 --------------------------------------------------------------
 -- Love callbacks:
 
