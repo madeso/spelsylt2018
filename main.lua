@@ -10,6 +10,7 @@ PLAYER_SPEED = 100
 GRAVITY = 600
 JUMP_SPEED = 200
 JUMP_TIME = 0.5
+ON_GROUND_REACTION = 2
 
 LIGHT_BG   = {r=196, g=208, b=162}
 DEFAULT_BG = {r=131, g=142, b=102}
@@ -76,6 +77,7 @@ draw_debug_text = function()
   end
   text("Y: " .. str(maxy) .. " / " .. str(player.vely))
   text("Jump timer: " .. str(jump_timer))
+  text("On ground: " .. str(on_ground_timer))
 end
 
 load_level = function(path)
@@ -125,6 +127,11 @@ player_update = function(dt)
 
   player.x, player.y, _, ground_collision_count = level_collision:move(player, player.x, player.y + player.vely*dt)
   local is_on_ground = ground_collision_count > 0 and player.vely >= 0
+  if is_on_ground then
+    on_ground_timer = 0
+  else
+    on_ground_timer = on_ground_timer + dt
+  end
   if capture_y then
     maxy = math.max(maxy, player.vely)
   end
@@ -159,7 +166,7 @@ input_left = false
 input_right = false
 
 jump_timer = 0
-
+on_ground_timer = 0
 
 --------------------------------------------------------------
 -- Love callbacks:
