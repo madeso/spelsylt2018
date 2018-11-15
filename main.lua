@@ -1,16 +1,20 @@
 local sti = require "sti"
 local bump = require "bump"
 local bump_debug = require "bump_debug"
+local lume = require "lume"
 
 
 --------------------------------------------------------------
 -- Tweaks:
 
-PLAYER_SPEED = 100
-GRAVITY = 600
-JUMP_SPEED = 200
-JUMP_TIME = 0.5
+PLAYER_SPEED = 200
+GRAVITY = 1300
+JUMP_SPEED = 250
+JUMP_TIME = 0.4
 ON_GROUND_REACTION = 0.1
+GROUND_FRICTION = 3
+AIR_CONTROL = 0.2
+ACCELERATION = 3
 
 LIGHT_BG   = {r=196, g=208, b=162}
 DEFAULT_BG = {r=131, g=142, b=102}
@@ -32,15 +36,15 @@ end
 plusminus = function(plus, minus)
   if plus then
     if minus then
-      return 0
+      return 0, false
     else
-      return 1
+      return 1, true
     end
   end
   if minus then
-    return -1
+    return -1, true
   end
-  return 0
+  return 0, false
 end
 
 set_color = function(c)
@@ -78,6 +82,7 @@ draw_debug_text = function()
   text("Y: " .. str(maxy) .. " / " .. str(player.vely))
   text("Jump timer: " .. str(jump_timer))
   text("On ground: " .. str(on_ground_timer))
+  text("Hor move: " .. str(player.velx))
 end
 
 load_level = function(path)
@@ -116,10 +121,12 @@ onkey = function(key, down)
 end
 
 player_update = function(dt)
-  local input_movement = plusminus(input_right, input_left)
-  local movement_hor = input_movement * dt * PLAYER_SPEED
   local ground_collision_count
+
+  -- make sure velocity is not nil
   if not player.vely then player.vely = 0 end
+  if not player.velx then player.velx = 0 end
+
   player.vely = player.vely + GRAVITY * dt
 
   if input_jump and jump_timer < JUMP_TIME then
@@ -134,6 +141,7 @@ player_update = function(dt)
     jump_timer = JUMP_TIME + 1
   end
 
+  ----------- vertical movment:
   player.x, player.y, _, ground_collision_count = level_collision:move(player, player.x, player.y + player.vely*dt)
   local is_on_ground = ground_collision_count > 0 and player.vely >= 0
   if is_on_ground then
@@ -155,7 +163,37 @@ player_update = function(dt)
   if on_ground_timer < ON_GROUND_REACTION and not input_jump then
     jump_timer = 0
   end
-  player.x, player.y = level_collision:move(player, player.x + movement_hor, player.y)
+
+  -------------- horizontal movment:
+  local input_movement, has_moved_hor = plusminus(input_right, input_left)
+  local control = 1
+  if not is_on_ground then
+    control = AIR_CONTROL
+  end
+  if has_moved_hor then
+    player.velx = lume.clamp(player.velx + control * ACCELERATION * input_movement * dt, -1, 1)
+  else
+    -- decrease horizontal movment if no input is hold
+    if math.abs(player.velx) > 0 and is_on_ground then
+      local change = GROUND_FRICTION * dt
+      if math.abs(player.velx) < change then
+        player.velx = 0
+      else
+        if player.velx > 0 then
+          player.velx = player.velx - change
+        else
+          player.velx = player.velx + change
+        end
+      end
+    end
+  end
+  local hor_collision_count
+  player.x, player.y, _, hor_collision_count = level_collision:move(player, player.x + player.velx * PLAYER_SPEED * dt, player.y)
+  local touches_wall = hor_collision_count > 0
+
+  if touches_wall then
+    player.velx = 0
+  end
 
   -- this if stops the infinite-jump when holding down the jump button
   if input_jump and jump_timer > JUMP_TIME then
