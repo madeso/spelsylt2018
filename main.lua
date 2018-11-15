@@ -2,23 +2,30 @@ local sti = require "sti"
 local bump = require "bump"
 local bump_debug = require "bump_debug"
 
+
+--------------------------------------------------------------
+-- Tweaks:
+
+PLAYER_SPEED = 100
+GRAVITY = 600
+JUMP_SPEED = 200
+JUMP_TIME = 0.5
+
+LIGHT_BG   = {r=196, g=208, b=162}
+DEFAULT_BG = {r=131, g=142, b=102}
+BLACK      = {r=0,   g=0,   b=0  }
+WHITE      = {r=255, g=255, b=255}
+
+
+-----------------------------------------------------------
+-- Util functions:
+
 make_sprite = function(x)
   return love.graphics.newQuad(x*32, 0, 32, 32, sprites:getWidth(), sprites:getHeight())
 end
 
 draw_sprite = function(q, x, y)
   love.graphics.draw(sprites, q, x, y)
-end
-
-load_level = function(path)
-  level_gfx = sti(path, {"bump"})
-  level_collision = bump.newWorld(32 * 2)
-  player.x = 90
-  player.y = 0
-  player.vely = 0
-  -- todo: setup player collision box
-  level_collision:add(player, player.x, player.y, 32, 32)
-  level_gfx:bump_init(level_collision)
 end
 
 plusminus = function(plus, minus)
@@ -33,6 +40,50 @@ plusminus = function(plus, minus)
     return -1
   end
   return 0
+end
+
+set_color = function(c)
+  local m = 255
+  local a = 1
+  if c.a then
+    a = c.a / max
+  end
+  love.graphics.setColor(c.r/m, c.g/m, c.b/m, a)
+end
+
+
+str = tostring
+
+--------------------------------------------------------
+-- Game code:
+
+draw_debug_text = function()
+  local y = 10
+  local text = function(t)
+    local x = 10
+    local f = love.graphics.getFont()
+    local h = f:getHeight()
+    local w = f:getWidth(t)
+    local padding = 3
+    set_color(LIGHT_BG)
+    love.graphics.rectangle("fill", x-padding, y-padding, w+padding*2, h+padding*2)
+    set_color(BLACK)
+    love.graphics.print(t, x, y)
+    y = y + h + padding*3
+  end
+  text("Y: " .. str(player.vely))
+  text("Jump timer: " .. str(jump_timer))
+end
+
+load_level = function(path)
+  level_gfx = sti(path, {"bump"})
+  level_collision = bump.newWorld(32 * 2)
+  player.x = 90
+  player.y = 0
+  player.vely = 0
+  -- todo: setup player collision box
+  level_collision:add(player, player.x, player.y, 32, 32)
+  level_gfx:bump_init(level_collision)
 end
 
 onkey = function(key, down)
@@ -84,16 +135,9 @@ player_update = function(dt)
   end
 end
 
---------------------------------------------------------------
 
--- gameplay tweaks
-PLAYER_SPEED = 100
-GRAVITY = 600
-JUMP_SPEED = 200
-JUMP_TIME = 0.5
-
-LIGHT_BG = {r= 196, g= 208, b= 162}
-DEFAULT_BG = {r= 131, g= 142, b= 102}
+---------------------------------------------------------------
+-- Startup code:
 
 love.graphics.setDefaultFilter("nearest", "nearest")
 sprites = love.graphics.newImage("sprites.png")
@@ -104,7 +148,10 @@ input_left = false
 input_right = false
 
 jump_timer = 0
+
+
 --------------------------------------------------------------
+-- Love callbacks:
 
 love.load = function()
   player = {x=0, y=0, vely=0}
@@ -117,11 +164,13 @@ love.draw = function()
     love.graphics.setBackgroundColor(c.r/max, c.g/max, c.b/max)
   end
   set_background(DEFAULT_BG)
+  set_color(WHITE)
   if debug_draw then
     bump_debug.draw(level_collision)
   end
   level_gfx:draw()
   draw_sprite(idle_sprite, player.x, player.y)
+  draw_debug_text()
 end
 
 love.update = function(dt)
@@ -137,4 +186,4 @@ end
 love.keyreleased = function(key)
   onkey(key, false)
 end
-print("eof")
+
