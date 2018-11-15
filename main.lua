@@ -101,6 +101,9 @@ onkey = function(key, down)
   if key == "up" then
     input_jump = down
   end
+  if key == "space" and down then
+    game_is_paused = not game_is_paused
+  end
   if key == "tab" and down then
     debug_draw = not debug_draw
   end
@@ -164,6 +167,7 @@ idle_sprite = make_sprite(0)
 debug_draw = false
 input_left = false
 input_right = false
+game_is_paused = false
 
 jump_timer = 0
 on_ground_timer = 0
@@ -181,7 +185,11 @@ love.draw = function()
     local max = 255
     love.graphics.setBackgroundColor(c.r/max, c.g/max, c.b/max)
   end
-  set_background(DEFAULT_BG)
+  if game_is_paused then
+    set_background(LIGHT_BG)
+  else
+    set_background(DEFAULT_BG)
+  end
   set_color(WHITE)
   if debug_draw then
     bump_debug.draw(level_collision)
@@ -193,7 +201,10 @@ end
 
 love.update = function(dt)
   -- DEBUG CODE
-  player_update(dt)
+  if game_is_paused then
+  else
+    player_update(dt)
+  end
   require("lurker").update()
 end
 
