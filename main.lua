@@ -10,7 +10,7 @@ PLAYER_SPEED = 100
 GRAVITY = 600
 JUMP_SPEED = 200
 JUMP_TIME = 0.5
-ON_GROUND_REACTION = 2
+ON_GROUND_REACTION = 0.1
 
 LIGHT_BG   = {r=196, g=208, b=162}
 DEFAULT_BG = {r=131, g=142, b=102}
@@ -151,7 +151,8 @@ player_update = function(dt)
     player.vely = 0
     jump_timer = JUMP_TIME + 1
   end
-  if is_on_ground then
+  -- if we was on the ground recently and we are not pressing the jump button
+  if on_ground_timer < ON_GROUND_REACTION and not input_jump then
     jump_timer = 0
   end
   player.x, player.y = level_collision:move(player, player.x + movement_hor, player.y)
