@@ -57,6 +57,9 @@ str = tostring
 --------------------------------------------------------
 -- Game code:
 
+maxy = 0
+capture_y = true
+
 draw_debug_text = function()
   local y = 10
   local text = function(t)
@@ -71,7 +74,7 @@ draw_debug_text = function()
     love.graphics.print(t, x, y)
     y = y + h + padding*3
   end
-  text("Y: " .. str(player.vely))
+  text("Y: " .. str(maxy) .. " / " .. str(player.vely))
   text("Jump timer: " .. str(jump_timer))
 end
 
@@ -114,12 +117,20 @@ player_update = function(dt)
   -- increase jump timer or set it beyond the max when released, so release+hold wont rejump
   if input_jump then
     jump_timer = jump_timer + dt
+    capture_y = true
+    maxy = 0
   else
     jump_timer = JUMP_TIME + 1
   end
 
   player.x, player.y, _, ground_collision_count = level_collision:move(player, player.x, player.y + player.vely*dt)
   local is_on_ground = ground_collision_count > 0 and player.vely >= 0
+  if capture_y then
+    maxy = math.max(maxy, player.vely)
+  end
+  if is_on_group then
+    capture_y = false
+  end
   if ground_collision_count > 0 then
     player.vely = 0
     jump_timer = JUMP_TIME + 1
