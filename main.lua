@@ -20,6 +20,11 @@ WALLSLIDE_SPEED = 1900
 WALLJUMP = 150
 WALLJUMP_ACCELERATION = 0.7
 
+CAMERA_FOLLOW_X = 8
+CAMERA_FOLLOW_Y = 8
+CAMERA_MAX_DISTANCE_Y = 80
+CAMERA_PLAYER_MAX_VELY = 750
+
 LIGHT_BG   = {r=196, g=208, b=162}
 DEFAULT_BG = {r=131, g=142, b=102}
 BLACK      = {r=0,   g=0,   b=0  }
@@ -202,6 +207,7 @@ player_update = function(dt)
   ----------- vertical movment:
   player.x, player.y, _, ground_collision_count = level_collision:move(player, player.x, player.y + player.vely*dt)
   local is_on_ground = ground_collision_count > 0 and player.vely >= 0
+  player.is_on_ground = is_on_ground
   if is_on_ground then
     on_ground_timer = 0
     is_walljumping = false
@@ -272,8 +278,12 @@ player_update = function(dt)
     end
   end
 
+  player.is_wallsliding = sliding
+  player.is_walljumping = false
+
   if sliding and input_jump then
     sliding = false
+    player.is_walljumping = true
     jump_timer = 0
     is_on_ground = false
     player.vely = WALLJUMP
@@ -315,8 +325,32 @@ player_update = function(dt)
 end
 
 camera_update = function(dt)
-  camera.x = player.x
-  camera.y = player.y
+  if not camera.target_x then camera.target_x = camera.x end
+  if not camera.target_y then camera.target_y = camera.x end
+
+  if player.is_on_ground then
+    camera.target_y = player.y
+  end
+
+  if math.abs(player.vely) > CAMERA_PLAYER_MAX_VELY then
+    camera.target_y = player.y
+    print("max vely")
+  end
+  
+  if player.is_wallsliding and math.abs(camera.target_y - player.y) > CAMERA_MAX_DISTANCE_Y and player.y > camera.target_y then
+    print("target: " .. str(camera.target_y))
+    print("player: " .. str(player.y))
+    camera.target_y = player.y
+  end
+
+  if player.is_walljumping then
+    camera.target_y = player.y
+  end
+
+  camera.target_x = player.x
+
+  camera.x = camera.x + (camera.target_x - camera.x) * CAMERA_FOLLOW_X * dt
+  camera.y = camera.y + (camera.target_y - camera.y) * CAMERA_FOLLOW_Y * dt
 end
 
 ---------------------------------------------------------------
