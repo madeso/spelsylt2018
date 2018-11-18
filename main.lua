@@ -135,6 +135,7 @@ load_level = function(path)
   start_position.x = 90
   start_position.y = 0
   player.x, player.y = start_position.x, start_position.y
+  camera.x, camera.y = start_position.x, start_position.y
   player.vely = 0
   player.facing_right = true
   -- todo: setup player collision box
@@ -313,6 +314,10 @@ player_update = function(dt)
   end
 end
 
+camera_update = function(dt)
+  camera.x = player.x
+  camera.y = player.y
+end
 
 ---------------------------------------------------------------
 -- Startup code:
@@ -325,6 +330,8 @@ anim_idle = make_animation({0}, 1)
 anim_run = make_animation({3, 0}, 0.055)
 anim_jump = make_animation({2}, 1)
 anim_wall = make_animation({5}, 1)
+
+camera = {x=0, y=0}
 
 STATE_IDLE = 1
 STATE_RUN = 2
@@ -359,11 +366,19 @@ love.draw = function()
     set_background(DEFAULT_BG)
   end
   set_color(WHITE)
+  local zoom = 2
+  local window_width, window_height = love.graphics.getWidth(), love.graphics.getHeight()
+  local camera_x, camera_y = camera.x * zoom - window_width / 2, camera.y * zoom - window_height/2
+
+  love.graphics.push()
+  love.graphics.translate(-camera_x, -camera_y)
+  love.graphics.scale(zoom, zoom)
   if debug_draw then
     bump_debug.draw(level_collision)
   end
-  level_gfx:draw()
+  level_gfx:draw(-camera_x/zoom, -camera_y/zoom, zoom, zoom)
   draw_animation(player.animation, player.x, player.y, player.facing_right)
+  love.graphics.pop()
   draw_debug_text()
 end
 
@@ -372,6 +387,7 @@ love.update = function(dt)
   if game_is_paused then
   else
     player_update(dt)
+    camera_update(dt)
   end
   require("lurker").update()
 end
