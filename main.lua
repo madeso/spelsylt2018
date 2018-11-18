@@ -236,6 +236,21 @@ player_update = function(dt)
   local is_on_ground = ground_collision_count > 0 and player.vely >= 0
   player.is_on_ground = is_on_ground
   if is_on_ground then
+    if player.vely > 100 then
+      print("landed: " .. str(player.vely))
+
+      if player.vely > 400 then
+        local trauma = 0.3
+        if player.vely > 700 then
+          trauma = 0.5
+        end
+        if player.vely > 900 then
+          trauma = 1.0
+        end
+        add_trauma(trauma)
+        print("adding some trauma: " .. str(trauma))
+      end
+    end
     on_ground_timer = 0
     is_walljumping = false
   else
@@ -395,7 +410,7 @@ anim_run = make_animation({3, 0, 2, 0}, 0.055)
 anim_jump = make_animation({1}, 1)
 anim_wall = make_animation({5}, 1)
 
-camera = {x=0, y=0, trauma=1, time=0}
+camera = {x=0, y=0, trauma=0, time=0}
 
 STATE_IDLE = 1
 STATE_RUN = 2
