@@ -33,8 +33,14 @@ make_sprite = function(x)
   return love.graphics.newQuad(x*32, 0, 32, 32, sprites:getWidth(), sprites:getHeight())
 end
 
-draw_sprite = function(q, x, y)
-  love.graphics.draw(sprites, q, x, y)
+draw_sprite = function(q, x, y, facing_right)
+  local scale_x = 1
+  local offset_x = 0
+  if not facing_right then
+    scale_x = -1
+    offset_x = 32
+  end
+  love.graphics.draw(sprites, q, x + offset_x, y, 0, scale_x, 1)
 end
 
 plusminus = function(plus, minus)
@@ -96,12 +102,18 @@ load_level = function(path)
   start_position.y = 0
   player.x, player.y = start_position.x, start_position.y
   player.vely = 0
+  player.facing_right = true
   -- todo: setup player collision box
   level_collision:add(player, player.x, player.y, 32, 32)
   level_gfx:bump_init(level_collision)
 end
 
 onkey = function(key, down)
+  if down then
+    print(key .. " was down")
+  else
+    print(key .. " was released")
+  end
   if key == "left" then
     input_left = down
   end
@@ -176,6 +188,15 @@ player_update = function(dt)
   -------------- horizontal movment:
   local input_movement, has_moved_hor = plusminus(input_right, input_left)
   local control = 1
+  if has_moved_hor then
+    if input_movement > 0 then
+      player.facing_right = true
+    else
+      player.facing_right = false
+    end
+  else
+    -- print("nop")
+  end
   if not is_on_ground then
     control = AIR_CONTROL
   end
@@ -252,7 +273,7 @@ is_walljumping = false
 -- Love callbacks:
 
 love.load = function()
-  player = {x=0, y=0, vely=0}
+  player = {x=0, y=0, vely=0, facing_right=true}
   start_position = {x=0, y=0}
   load_level("level1.lua")
 end
@@ -272,7 +293,7 @@ love.draw = function()
     bump_debug.draw(level_collision)
   end
   level_gfx:draw()
-  draw_sprite(idle_sprite, player.x, player.y)
+  draw_sprite(idle_sprite, player.x, player.y, player.facing_right)
   draw_debug_text()
 end
 
