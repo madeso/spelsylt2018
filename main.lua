@@ -327,8 +327,8 @@ sprites = love.graphics.newImage("sprites.png")
 idle_sprite = make_sprite(0)
 
 anim_idle = make_animation({0}, 1)
-anim_run = make_animation({3, 0}, 0.055)
-anim_jump = make_animation({2}, 1)
+anim_run = make_animation({3, 0, 2, 0}, 0.055)
+anim_jump = make_animation({1}, 1)
 anim_wall = make_animation({5}, 1)
 
 camera = {x=0, y=0}
