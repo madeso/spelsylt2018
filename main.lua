@@ -2,7 +2,8 @@ local sti = require "sti"
 local bump = require "bump"
 local bump_debug = require "bump_debug"
 local lume = require "lume"
-
+require "perlin"
+perlin:load()
 
 --------------------------------------------------------------
 -- Tweaks:
@@ -24,6 +25,9 @@ CAMERA_FOLLOW_X = 8
 CAMERA_FOLLOW_Y = 8
 CAMERA_MAX_DISTANCE_Y = 80
 CAMERA_PLAYER_MAX_VELY = 750
+CAMERA_MAX_TRANSLATION_SHAKE = 50
+CAMERA_SEED = 100
+CAMERA_SHAKE_FREQUENCY = 5
 
 LIGHT_BG   = {r=196, g=208, b=162}
 DEFAULT_BG = {r=131, g=142, b=102}
@@ -33,6 +37,20 @@ WHITE      = {r=255, g=255, b=255}
 
 -----------------------------------------------------------
 -- Util functions:
+
+perlin_noise = function(x, y)
+  if not x then
+    print("x is null")
+  end
+  if not y then
+    print("y is null")
+  end
+  return perlin:noise(x, y, x)
+end
+
+add_trauma = function(val)
+  camera.trauma = lume.clamp(camera.trauma + val, 0, 1)
+end
 
 make_sprite = function(x)
   return love.graphics.newQuad(x*32, 0, 32, 32, sprites:getWidth(), sprites:getHeight())
@@ -132,6 +150,7 @@ draw_debug_text = function()
   text("Jump timer: " .. str(jump_timer))
   text("On ground: " .. str(on_ground_timer))
   text("Hor move: " .. str(player.velx))
+  text("Trauma: " .. str(camera.trauma))
 end
 
 load_level = function(path)
@@ -139,6 +158,7 @@ load_level = function(path)
   level_collision = bump.newWorld(32 * 2)
   start_position.x = 90
   start_position.y = 0
+  camera.time = 0
   player.x, player.y = start_position.x, start_position.y
   camera.x, camera.y = start_position.x, start_position.y
   player.vely = 0
@@ -169,7 +189,11 @@ onkey = function(key, down)
   if key == "tab" and down then
     debug_draw = not debug_draw
   end
+  if key == "x" and down then
+    add_trauma(0.3)
+  end
   if key == "r" and not down then
+    camera.time = 0
     player.x = start_position.x
     player.y = start_position.y
     level_collision:update(player, player.x, player.y)
@@ -328,6 +352,8 @@ camera_update = function(dt)
   if not camera.target_x then camera.target_x = camera.x end
   if not camera.target_y then camera.target_y = camera.x end
 
+  camera.time = camera.time + dt
+
   if player.is_on_ground then
     camera.target_y = player.y
   end
@@ -365,7 +391,7 @@ anim_run = make_animation({3, 0, 2, 0}, 0.055)
 anim_jump = make_animation({1}, 1)
 anim_wall = make_animation({5}, 1)
 
-camera = {x=0, y=0}
+camera = {x=0, y=0, trauma=1, time=0}
 
 STATE_IDLE = 1
 STATE_RUN = 2
@@ -402,7 +428,10 @@ love.draw = function()
   set_color(WHITE)
   local zoom = 2
   local window_width, window_height = love.graphics.getWidth(), love.graphics.getHeight()
-  local camera_x, camera_y = camera.x * zoom - window_width / 2, camera.y * zoom - window_height/2
+  local camera_shake = camera.trauma * camera.trauma * camera.trauma
+  local offset_x = camera_shake * CAMERA_MAX_TRANSLATION_SHAKE * perlin_noise(camera.time * CAMERA_SHAKE_FREQUENCY, CAMERA_SEED)
+  local offset_y = camera_shake * CAMERA_MAX_TRANSLATION_SHAKE * perlin_noise(camera.time * CAMERA_SHAKE_FREQUENCY, CAMERA_SEED + 1)
+  local camera_x, camera_y = (offset_x + camera.x) * zoom - window_width / 2, (offset_y + camera.y) * zoom - window_height/2
 
   love.graphics.push()
   love.graphics.translate(-camera_x, -camera_y)
