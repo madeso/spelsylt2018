@@ -370,6 +370,8 @@ camera_update = function(dt)
   if not camera.target_x then camera.target_x = camera.x end
   if not camera.target_y then camera.target_y = camera.x end
 
+  local camera_follow_y = CAMERA_FOLLOW_Y
+
   camera.time = camera.time + dt
   camera.trauma = lume.clamp(camera.trauma - dt * CAMERA_TRAUMA_DECREASE, 0, 1)
 
@@ -379,7 +381,7 @@ camera_update = function(dt)
 
   if math.abs(player.vely) > CAMERA_PLAYER_MAX_VELY then
     camera.target_y = player.y
-    print("max vely")
+    camera_follow_y = 30
   end
   
   if player.is_wallsliding and math.abs(camera.target_y - player.y) > CAMERA_MAX_DISTANCE_Y and player.y > camera.target_y then
@@ -394,8 +396,8 @@ camera_update = function(dt)
 
   camera.target_x = player.x
 
-  camera.x = camera.x + (camera.target_x - camera.x) * CAMERA_FOLLOW_X * dt
-  camera.y = camera.y + (camera.target_y - camera.y) * CAMERA_FOLLOW_Y * dt
+  camera.x = camera.x + (camera.target_x - camera.x) * lume.clamp(CAMERA_FOLLOW_X * dt, 0, 1)
+  camera.y = camera.y + (camera.target_y - camera.y) * lume.clamp(camera_follow_y * dt, 0, 1)
 end
 
 ---------------------------------------------------------------
