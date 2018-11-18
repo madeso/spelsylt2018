@@ -25,9 +25,10 @@ CAMERA_FOLLOW_X = 8
 CAMERA_FOLLOW_Y = 8
 CAMERA_MAX_DISTANCE_Y = 80
 CAMERA_PLAYER_MAX_VELY = 750
-CAMERA_MAX_TRANSLATION_SHAKE = 50
+CAMERA_MAX_TRANSLATION_SHAKE = 90
 CAMERA_SEED = 100
 CAMERA_SHAKE_FREQUENCY = 5
+CAMERA_TRAUMA_DECREASE = 0.7
 
 LIGHT_BG   = {r=196, g=208, b=162}
 DEFAULT_BG = {r=131, g=142, b=102}
@@ -353,6 +354,7 @@ camera_update = function(dt)
   if not camera.target_y then camera.target_y = camera.x end
 
   camera.time = camera.time + dt
+  camera.trauma = lume.clamp(camera.trauma - dt * CAMERA_TRAUMA_DECREASE, 0, 1)
 
   if player.is_on_ground then
     camera.target_y = player.y
@@ -428,7 +430,7 @@ love.draw = function()
   set_color(WHITE)
   local zoom = 2
   local window_width, window_height = love.graphics.getWidth(), love.graphics.getHeight()
-  local camera_shake = camera.trauma * camera.trauma * camera.trauma
+  local camera_shake = camera.trauma * camera.trauma
   local offset_x = camera_shake * CAMERA_MAX_TRANSLATION_SHAKE * perlin_noise(camera.time * CAMERA_SHAKE_FREQUENCY, CAMERA_SEED)
   local offset_y = camera_shake * CAMERA_MAX_TRANSLATION_SHAKE * perlin_noise(camera.time * CAMERA_SHAKE_FREQUENCY, CAMERA_SEED + 1)
   local camera_x, camera_y = (offset_x + camera.x) * zoom - window_width / 2, (offset_y + camera.y) * zoom - window_height/2
