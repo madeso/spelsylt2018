@@ -296,7 +296,7 @@ player_update = function(dt)
       print("switching anim")
       o.animation = anim
       o.anim_state = anim_state
-      reset_animation(o.anim)
+      reset_animation(o.animation)
     end
   end
   if is_on_ground then
