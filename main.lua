@@ -43,6 +43,40 @@ draw_sprite = function(q, x, y, facing_right)
   love.graphics.draw(sprites, q, x + offset_x, y, 0, scale_x, 1)
 end
 
+make_animation = function(frames, speed)
+  local anim = {}
+  anim.sprites = {}
+  for i, f in ipairs(frames) do
+    anim.sprites[i] = make_sprite(f)
+  end
+  anim.time = 0
+  anim.speed = speed
+  anim.current_frame = 1
+  return anim
+end
+
+step_animation = function(anim, dt)
+  anim.time = anim.time + dt
+  while anim.time > anim.speed do
+    anim.time = anim.time - anim.speed
+    anim.current_frame = anim.current_frame + 1
+    if anim.current_frame > #anim.sprites then
+      anim.current_frame = 1
+    end
+  end
+end
+
+reset_animation = function(anim)
+  anim.current_frame = 1
+  anim.time = 0
+end
+
+draw_animation = function(anim, x, y, facing_right)
+  if not anim then return end
+  local sprite = anim.sprites[anim.current_frame]
+  draw_sprite(sprite, x, y, facing_right)
+end
+
 plusminus = function(plus, minus)
   if plus then
     if minus then
@@ -142,6 +176,9 @@ player_update = function(dt)
   -- make sure velocity is not nil
   if not player.vely then player.vely = 0 end
   if not player.velx then player.velx = 0 end
+  if not player.animation then player.animation = anim_idle end
+
+  step_animation(player.animation, dt)
 
   player.vely = player.vely + GRAVITY * dt
 
@@ -251,6 +288,29 @@ player_update = function(dt)
   if input_jump and jump_timer > JUMP_TIME then
     input_jump = false
   end
+
+  -- determine player animation
+  local set_animation = function(o, anim, anim_state)
+    if o.anim_state ~= anim_state then
+      print("switching anim")
+      o.animation = anim
+      o.anim_state = anim_state
+      reset_animation(o.anim)
+    end
+  end
+  if is_on_ground then
+    if has_moved_hor then
+      set_animation(player, anim_run, STATE_RUN)
+    else
+      set_animation(player, anim_idle, STATE_IDLE)
+    end
+  else
+    if sliding then
+    set_animation(player, anim_wall, STATE_WALL)
+    else
+      set_animation(player, anim_jump, STATE_JUMP)
+    end
+  end
 end
 
 
@@ -260,6 +320,16 @@ end
 love.graphics.setDefaultFilter("nearest", "nearest")
 sprites = love.graphics.newImage("sprites.png")
 idle_sprite = make_sprite(0)
+
+anim_idle = make_animation({0}, 1)
+anim_run = make_animation({3, 0}, 0.055)
+anim_jump = make_animation({2}, 1)
+anim_wall = make_animation({5}, 1)
+
+STATE_IDLE = 1
+STATE_RUN = 2
+STATE_JUMP = 3
+STATE_WALL = 4
 
 debug_draw = false
 input_left = false
@@ -273,7 +343,7 @@ is_walljumping = false
 -- Love callbacks:
 
 love.load = function()
-  player = {x=0, y=0, vely=0, facing_right=true}
+  player = {x=0, y=0, vely=0, facing_right=true, animation=nil}
   start_position = {x=0, y=0}
   load_level("level1.lua")
 end
@@ -293,7 +363,7 @@ love.draw = function()
     bump_debug.draw(level_collision)
   end
   level_gfx:draw()
-  draw_sprite(idle_sprite, player.x, player.y, player.facing_right)
+  draw_animation(player.animation, player.x, player.y, player.facing_right)
   draw_debug_text()
 end
 
