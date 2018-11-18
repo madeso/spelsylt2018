@@ -25,8 +25,10 @@ CAMERA_FOLLOW_X = 8
 CAMERA_FOLLOW_Y = 8
 CAMERA_MAX_DISTANCE_Y = 80
 CAMERA_PLAYER_MAX_VELY = 750
-CAMERA_MAX_TRANSLATION_SHAKE = 90
-CAMERA_SEED = 100
+CAMERA_MAX_TRANSLATION_SHAKE = 120
+CAMERA_SEED_0 = 100
+CAMERA_SEED_1 = 120
+CAMERA_SEED_2 = 220
 CAMERA_SHAKE_FREQUENCY = 5
 CAMERA_TRAUMA_DECREASE = 0.7
 
@@ -342,7 +344,7 @@ player_update = function(dt)
     end
   else
     if sliding then
-    set_animation(player, anim_wall, STATE_WALL)
+      set_animation(player, anim_wall, STATE_WALL)
     else
       set_animation(player, anim_jump, STATE_JUMP)
     end
@@ -431,17 +433,22 @@ love.draw = function()
   local zoom = 2
   local window_width, window_height = love.graphics.getWidth(), love.graphics.getHeight()
   local camera_shake = camera.trauma * camera.trauma
-  local offset_x = camera_shake * CAMERA_MAX_TRANSLATION_SHAKE * perlin_noise(camera.time * CAMERA_SHAKE_FREQUENCY, CAMERA_SEED)
-  local offset_y = camera_shake * CAMERA_MAX_TRANSLATION_SHAKE * perlin_noise(camera.time * CAMERA_SHAKE_FREQUENCY, CAMERA_SEED + 1)
+  local offset_x = camera_shake * CAMERA_MAX_TRANSLATION_SHAKE * perlin_noise(camera.time * CAMERA_SHAKE_FREQUENCY, CAMERA_SEED_0)
+  local offset_y = camera_shake * CAMERA_MAX_TRANSLATION_SHAKE * perlin_noise(camera.time * CAMERA_SHAKE_FREQUENCY, CAMERA_SEED_1)
   local camera_x, camera_y = (offset_x + camera.x) * zoom - window_width / 2, (offset_y + camera.y) * zoom - window_height/2
+  local angle = 0.5 * math.pi/2 * camera_shake * perlin_noise(camera.time * CAMERA_SHAKE_FREQUENCY, CAMERA_SEED_2)
 
   love.graphics.push()
+  love.graphics.translate(window_width/2, window_height/2)
+  love.graphics.rotate(angle)
+  love.graphics.translate(-window_width/2, -window_height/2)
   love.graphics.translate(-camera_x, -camera_y)
   love.graphics.scale(zoom, zoom)
   if debug_draw then
     bump_debug.draw(level_collision)
   end
-  level_gfx:draw(-camera_x/zoom, -camera_y/zoom, zoom, zoom)
+  -- level_gfx:draw(-camera_x/zoom, -camera_y/zoom, zoom, zoom)
+  level_gfx:drawLayer(level_gfx.layers["col"])
   draw_animation(player.animation, player.x, player.y, player.facing_right)
   love.graphics.pop()
   draw_debug_text()
