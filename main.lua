@@ -21,6 +21,11 @@ WALLSLIDE_SPEED = 1900
 WALLJUMP = 150
 WALLJUMP_ACCELERATION = 0.7
 
+DASH_TIMEOUT = 1
+DASH_DY = 800
+DASH_DX = 800
+DASH_MIN_VELY = 240
+
 CAMERA_FOLLOW_X = 8
 CAMERA_FOLLOW_Y = 8
 CAMERA_MAX_DISTANCE_Y = 80
@@ -172,11 +177,6 @@ load_level = function(path)
 end
 
 onkey = function(key, down)
-  if down then
-    print(key .. " was down")
-  else
-    print(key .. " was released")
-  end
   if key == "left" then
     input_left = down
   end
@@ -194,6 +194,9 @@ onkey = function(key, down)
   end
   if key == "x" and down then
     add_trauma(0.3)
+  end
+  if key == "c" then
+    input_dash = down
   end
   if key == "r" and not down then
     camera.time = 0
@@ -213,22 +216,50 @@ player_update = function(dt)
 
   step_animation(player.animation, dt)
 
-  player.vely = player.vely + GRAVITY * dt
-
-  if input_jump and jump_timer < JUMP_TIME then
-    if not is_walljumping then
-      player.vely = -JUMP_SPEED
+  if input_dash and on_ground_timer > 0.1 and not player.is_wallsliding then
+    if player.vely < DASH_MIN_VELY then
+      player.dash_state = DASH_HOLD
+      player.dash_timer = 0
+      player.vely = 0
+      input_dash = false
+      input_jump = false
+      capture_y = true
+      maxy = 0
+      jump_timer = JUMP_TIME + 1
     else
-      player.vely = -WALLJUMP
+      print("Too high vely: " .. str(player.vely))
     end
   end
-  -- increase jump timer or set it beyond the max when released, so release+hold wont rejump
-  if input_jump then
-    jump_timer = jump_timer + dt
-    capture_y = true
-    maxy = 0
+
+  if player.dash_state == DASH_NONE then
+    player.vely = player.vely + GRAVITY * dt
+
+    if input_jump and jump_timer < JUMP_TIME then
+      if not is_walljumping then
+        player.vely = -JUMP_SPEED
+      else
+        player.vely = -WALLJUMP
+      end
+    end
+    -- increase jump timer or set it beyond the max when released, so release+hold wont rejump
+    if input_jump then
+      jump_timer = jump_timer + dt
+      capture_y = true
+      maxy = 0
+    else
+      jump_timer = JUMP_TIME + 1
+    end
+  elseif player.dash_state == DASH_HOLD then
+    player.dash_timer = player.dash_timer + dt
+    if player.dash_timer > DASH_TIMEOUT then
+      print("dash timeout")
+      player.dash_state = DASH_NONE
+    end
+  elseif player.dash_state == DASH_DASH then
+    -- nop
   else
-    jump_timer = JUMP_TIME + 1
+    print("Unknown dash state: " .. str(player.dash_state))
+    player.dash_state = DASH_NONE
   end
 
   ----------- vertical movment:
@@ -273,79 +304,104 @@ player_update = function(dt)
 
   -------------- horizontal movment:
   local input_movement, has_moved_hor = plusminus(input_right, input_left)
-  local control = 1
-  if has_moved_hor then
-    if input_movement > 0 then
-      player.facing_right = true
-    else
-      player.facing_right = false
-    end
-  else
-    -- print("nop")
-  end
-  if not is_on_ground then
-    control = AIR_CONTROL
-  end
-  if has_moved_hor then
-    player.velx = lume.clamp(player.velx + control * ACCELERATION * input_movement * dt, -1, 1)
-  else
-    -- decrease horizontal movment if no input is hold
-    if math.abs(player.velx) > 0 and is_on_ground then
-      local change = GROUND_FRICTION * dt
-      if math.abs(player.velx) < change then
-        player.velx = 0
+  if player.dash_state == DASH_NONE then
+    local control = 1
+    if has_moved_hor then
+      if input_movement > 0 then
+        player.facing_right = true
       else
-        if player.velx > 0 then
-          player.velx = player.velx - change
+        player.facing_right = false
+      end
+    else
+      -- print("nop")
+    end
+    if not is_on_ground then
+      control = AIR_CONTROL
+    end
+    if has_moved_hor then
+      player.velx = lume.clamp(player.velx + control * ACCELERATION * input_movement * dt, -1, 1)
+    else
+      -- decrease horizontal movment if no input is hold
+      if math.abs(player.velx) > 0 and is_on_ground then
+        local change = GROUND_FRICTION * dt
+        if math.abs(player.velx) < change then
+          player.velx = 0
         else
-          player.velx = player.velx + change
+          if player.velx > 0 then
+            player.velx = player.velx - change
+          else
+            player.velx = player.velx + change
+          end
         end
       end
     end
-  end
-  local hor_collision_count
-  player.x, player.y, _, hor_collision_count = level_collision:move(player, player.x + player.velx * PLAYER_SPEED * dt, player.y)
-  local touches_wall = hor_collision_count > 0
 
-  if touches_wall then
-    player.velx = 0
-  end
-
-  local sliding = false
-  if has_moved_hor and touches_wall and player.vely > WALLSLIDE then
-    player.vely = player.vely - WALLSLIDE_SPEED * dt
-    sliding = true
-    if player.vely <= WALLSLIDE then
-      player.vely = WALLSLIDE
+    local hor_collision_count
+    player.x, player.y, _, hor_collision_count = level_collision:move(player, player.x + player.velx * PLAYER_SPEED * dt, player.y)
+    local touches_wall = hor_collision_count > 0
+  
+    if touches_wall then
+      player.velx = 0
     end
-  end
-
-  player.is_wallsliding = sliding
-  player.is_walljumping = false
-
-  if sliding and input_jump then
-    sliding = false
-    player.is_walljumping = true
-    jump_timer = 0
-    is_on_ground = false
-    player.vely = WALLJUMP
-    is_walljumping = true
-    if input_movement > 0 then
-      player.velx = -WALLJUMP_ACCELERATION
-    else
-      player.velx = WALLJUMP_ACCELERATION
+  
+    local sliding = false
+    if has_moved_hor and touches_wall and player.vely > WALLSLIDE then
+      player.vely = player.vely - WALLSLIDE_SPEED * dt
+      sliding = true
+      if player.vely <= WALLSLIDE then
+        player.vely = WALLSLIDE
+      end
     end
-  end
+  
+    player.is_wallsliding = sliding
+    player.is_walljumping = false
+  
+    if player.is_wallsliding and input_jump then
+      player.is_wallsliding = false
+      player.is_walljumping = true
+      jump_timer = 0
+      is_on_ground = false
+      player.vely = WALLJUMP
+      is_walljumping = true
+      if input_movement > 0 then
+        player.velx = -WALLJUMP_ACCELERATION
+      else
+        player.velx = WALLJUMP_ACCELERATION
+      end
+    end
+  
+    -- this if stops the infinite-jump when holding down the jump button
+    if input_jump and jump_timer > JUMP_TIME then
+      input_jump = false
+    end
+  elseif player.dash_state == DASH_HOLD then
+    if has_moved_hor then
+      if input_movement > 0 then
+        player.facing_right = true
+      else
+        player.facing_right = false
+      end
+      player.dash_state = DASH_DASH
+    end
+  elseif player.dash_state == DASH_DASH then
+    local dash_collision_count
+    local dash_dx = DASH_DX
+    if not player.facing_right then
+      dash_dx = -dash_dx
+    end
+    player.x, player.y, _, dash_collision_count = level_collision:move(player, player.x + dash_dx * dt, player.y + DASH_DY * dt)
 
-  -- this if stops the infinite-jump when holding down the jump button
-  if input_jump and jump_timer > JUMP_TIME then
-    input_jump = false
+    if dash_collision_count > 0 then
+      add_trauma(0.7)
+      player.dash_state = DASH_NONE
+      print("dash done")
+    end
+  else
+    print("invalid dash state " .. str(player.dash_state))
   end
-
   -- determine player animation
   local set_animation = function(o, anim, anim_state)
     if o.anim_state ~= anim_state then
-      print("switching anim")
       o.animation = anim
       o.anim_state = anim_state
       reset_animation(o.animation)
@@ -358,7 +414,7 @@ player_update = function(dt)
       set_animation(player, anim_idle, STATE_IDLE)
     end
   else
-    if sliding then
+    if player.is_wallsliding then
       set_animation(player, anim_wall, STATE_WALL)
     else
       set_animation(player, anim_jump, STATE_JUMP)
@@ -414,14 +470,22 @@ anim_wall = make_animation({5}, 1)
 
 camera = {x=0, y=0, trauma=0, time=0}
 
+-- STATES
+
 STATE_IDLE = 1
 STATE_RUN = 2
 STATE_JUMP = 3
 STATE_WALL = 4
 
+DASH_NONE = 0
+DASH_HOLD = 1
+DASH_DASH = 2
+
 debug_draw = false
 input_left = false
 input_right = false
+input_jump = false
+input_dash = false
 game_is_paused = false
 
 jump_timer = 0
