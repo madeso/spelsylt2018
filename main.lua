@@ -82,6 +82,8 @@ local start_position = {x=0, y=0}
 
 -----------------------------------------------------------
 -- Util functions:
+local nop = function() end
+
 local perlin_noise = function(x, y)
   if not x then
     print("x is null")
@@ -299,7 +301,7 @@ local player_update = function(dt)
       player.dash_state = DASH_NONE
     end
   elseif player.dash_state == DASH_DASH then
-    -- nop
+    nop()
   else
     print("Unknown dash state: " .. str(player.dash_state))
     player.dash_state = DASH_NONE
