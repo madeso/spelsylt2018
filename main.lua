@@ -78,6 +78,7 @@ local jump_timer = 0
 local on_ground_timer = 0
 local is_walljumping = false
 local camera = {x=0, y=0, trauma=0, time=0}
+local start_position = {x=0, y=0}
 
 -----------------------------------------------------------
 -- Util functions:
@@ -504,7 +505,6 @@ end
 
 love.load = function()
   player = {x=0, y=0, vely=0, facing_right=true, animation=nil}
-  start_position = {x=0, y=0}
   load_level("level1.lua")
 end
 
