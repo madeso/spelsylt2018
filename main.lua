@@ -333,7 +333,7 @@ local player_update = function(dt)
   if capture_y then
     maxy = math.max(maxy, player.vely)
   end
-  if is_on_group then
+  if is_on_ground then
     capture_y = false
   end
   if ground_collision_count > 0 then
@@ -355,8 +355,6 @@ local player_update = function(dt)
       else
         player.facing_right = false
       end
-    else
-      -- print("nop")
     end
     if not is_on_ground then
       control = AIR_CONTROL
@@ -482,7 +480,7 @@ local camera_update = function(dt)
     camera.target_y = player.y
     camera_follow_y = 30
   end
-  
+
   if player.is_wallsliding and math.abs(camera.target_y - player.y) > CAMERA_MAX_DISTANCE_Y and player.y > camera.target_y then
     print("target: " .. str(camera.target_y))
     print("player: " .. str(player.y))
@@ -545,8 +543,7 @@ end
 
 love.update = function(dt)
   -- DEBUG CODE
-  if game_is_paused then
-  else
+  if not game_is_paused then
     player_update(dt)
     camera_update(dt)
   end
