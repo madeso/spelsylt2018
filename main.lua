@@ -10,10 +10,14 @@ perlin:load()
 
 love.graphics.setDefaultFilter("nearest", "nearest")
 local sprites = love.graphics.newImage("sprites.png")
+local debug_font = love.graphics.newFont(12)
+local big_font = love.graphics.newFont("Kenney Pixel.ttf", 950)
 
 --------------------------------------------------------------
 -- Tweaks:
 
+local LONG_STACHE_FIND = 9
+local SHORT_STACHE_FIND = 5
 local PLAYER_SPEED = 200
 local GRAVITY = 1300
 local JUMP_SPEED = 250
@@ -79,6 +83,8 @@ local on_ground_timer = 0
 local is_walljumping = false
 local camera = {x=0, y=0, trauma=0, time=0}
 local start_position = {x=0, y=0}
+local has_stache = true
+local life = 0
 
 -----------------------------------------------------------
 -- Util functions:
@@ -199,6 +205,7 @@ local draw_debug_text = function()
     love.graphics.print(t, x, y)
     y = y + h + padding*3
   end
+  love.graphics.setFont(debug_font)
   text("Y: " .. str(maxy) .. " / " .. str(player.vely))
   text("Jump timer: " .. str(jump_timer))
   text("On ground: " .. str(on_ground_timer))
@@ -253,6 +260,14 @@ end
 
 local player_update = function(dt)
   local ground_collision_count
+
+  if not has_stache then
+    life = life - dt
+    if life < 0 then
+      has_stache = true
+      print("Player died...")
+    end
+  end
 
   -- make sure velocity is not nil
   if not player.vely then player.vely = 0 end
@@ -319,9 +334,17 @@ local player_update = function(dt)
         local trauma = 0.3
         if player.vely > 700 then
           trauma = 0.5
+          if has_stache then
+            has_stache = false
+            life = LONG_STACHE_FIND
+          end
         end
         if player.vely > 900 then
           trauma = 1.0
+          if has_stache then
+            has_stache = false
+            life = life - SHORT_STACHE_FIND
+          end
         end
         add_trauma(trauma)
         print("adding some trauma: " .. str(trauma))
@@ -540,6 +563,13 @@ love.draw = function()
   level_gfx:drawLayer(level_gfx.layers["col"])
   draw_animation(player.animation, player.x, player.y, player.facing_right)
   love.graphics.pop()
+  if not has_stache then
+    love.graphics.setFont(big_font)
+    local alpha = {r=255, g=255, b=255, a=180}
+    set_color(alpha)
+    love.graphics.print(math.ceil(life), 250, -80)
+    set_color(WHITE)
+  end
   draw_debug_text()
 end
 
