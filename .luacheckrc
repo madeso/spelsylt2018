@@ -1,4 +1,5 @@
 std = 'love+luajit'
+max_line_length = false
 
 globals = {
   -- crappy library, probably need to fix this small lib or find another that is better lua
