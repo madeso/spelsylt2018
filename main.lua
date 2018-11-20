@@ -6,47 +6,82 @@ require "perlin"
 perlin:load()
 
 --------------------------------------------------------------
+-- Setup:
+
+love.graphics.setDefaultFilter("nearest", "nearest")
+local sprites = love.graphics.newImage("sprites.png")
+
+--------------------------------------------------------------
 -- Tweaks:
 
-PLAYER_SPEED = 200
-GRAVITY = 1300
-JUMP_SPEED = 250
-JUMP_TIME = 0.4
-ON_GROUND_REACTION = 0.1
-GROUND_FRICTION = 3
-AIR_CONTROL = 0.2
-ACCELERATION = 3
-WALLSLIDE = 50
-WALLSLIDE_SPEED = 1900
-WALLJUMP = 150
-WALLJUMP_ACCELERATION = 0.7
+local PLAYER_SPEED = 200
+local GRAVITY = 1300
+local JUMP_SPEED = 250
+local JUMP_TIME = 0.4
+local ON_GROUND_REACTION = 0.1
+local GROUND_FRICTION = 3
+local AIR_CONTROL = 0.2
+local ACCELERATION = 3
+local WALLSLIDE = 50
+local WALLSLIDE_SPEED = 1900
+local WALLJUMP = 150
+local WALLJUMP_ACCELERATION = 0.7
 
-DASH_TIMEOUT = 1
-DASH_DY = 800
-DASH_DX = 800
-DASH_MIN_VELY = 240
+local DASH_TIMEOUT = 1
+local DASH_DY = 800
+local DASH_DX = 800
+local DASH_MIN_VELY = 240
 
-CAMERA_FOLLOW_X = 8
-CAMERA_FOLLOW_Y = 8
-CAMERA_MAX_DISTANCE_Y = 80
-CAMERA_PLAYER_MAX_VELY = 750
-CAMERA_MAX_TRANSLATION_SHAKE = 120
-CAMERA_SEED_0 = 100
-CAMERA_SEED_1 = 120
-CAMERA_SEED_2 = 220
-CAMERA_SHAKE_FREQUENCY = 5
-CAMERA_TRAUMA_DECREASE = 0.7
+local CAMERA_FOLLOW_X = 8
+local CAMERA_FOLLOW_Y = 8
+local CAMERA_MAX_DISTANCE_Y = 80
+local CAMERA_PLAYER_MAX_VELY = 750
+local CAMERA_MAX_TRANSLATION_SHAKE = 120
+local CAMERA_SEED_0 = 100
+local CAMERA_SEED_1 = 120
+local CAMERA_SEED_2 = 220
+local CAMERA_SHAKE_FREQUENCY = 5
+local CAMERA_TRAUMA_DECREASE = 0.7
 
-LIGHT_BG   = {r=196, g=208, b=162}
-DEFAULT_BG = {r=131, g=142, b=102}
-BLACK      = {r=0,   g=0,   b=0  }
-WHITE      = {r=255, g=255, b=255}
+-----------------------------------------------------------
+-- Colors:
 
+local LIGHT_BG   = {r=196, g=208, b=162}
+local DEFAULT_BG = {r=131, g=142, b=102}
+local BLACK      = {r=0,   g=0,   b=0  }
+local WHITE      = {r=255, g=255, b=255}
+
+-----------------------------------------------------------
+-- States:
+
+local STATE_IDLE = 1
+local STATE_RUN = 2
+local STATE_JUMP = 3
+local STATE_WALL = 4
+
+local DASH_NONE = 0
+local DASH_HOLD = 1
+local DASH_DASH = 2
+
+-----------------------------------------------------------
+-- Input:
+local debug_draw = false
+local input_left = false
+local input_right = false
+local input_jump = false
+local input_dash = false
+local game_is_paused = false
+
+----------------------------------------------------------------
+-- Gameplay:
+local jump_timer = 0
+local on_ground_timer = 0
+local is_walljumping = false
+local camera = {x=0, y=0, trauma=0, time=0}
 
 -----------------------------------------------------------
 -- Util functions:
-
-perlin_noise = function(x, y)
+local perlin_noise = function(x, y)
   if not x then
     print("x is null")
   end
@@ -56,15 +91,15 @@ perlin_noise = function(x, y)
   return perlin:noise(x, y, x)
 end
 
-add_trauma = function(val)
+local add_trauma = function(val)
   camera.trauma = lume.clamp(camera.trauma + val, 0, 1)
 end
 
-make_sprite = function(x)
+local make_sprite = function(x)
   return love.graphics.newQuad(x*32, 0, 32, 32, sprites:getWidth(), sprites:getHeight())
 end
 
-draw_sprite = function(q, x, y, facing_right)
+local draw_sprite = function(q, x, y, facing_right)
   local scale_x = 1
   local offset_x = 0
   if not facing_right then
@@ -74,7 +109,7 @@ draw_sprite = function(q, x, y, facing_right)
   love.graphics.draw(sprites, q, x + offset_x, y, 0, scale_x, 1)
 end
 
-make_animation = function(frames, speed)
+local make_animation = function(frames, speed)
   local anim = {}
   anim.sprites = {}
   for i, f in ipairs(frames) do
@@ -86,7 +121,7 @@ make_animation = function(frames, speed)
   return anim
 end
 
-step_animation = function(anim, dt)
+local step_animation = function(anim, dt)
   anim.time = anim.time + dt
   while anim.time > anim.speed do
     anim.time = anim.time - anim.speed
@@ -97,18 +132,18 @@ step_animation = function(anim, dt)
   end
 end
 
-reset_animation = function(anim)
+local reset_animation = function(anim)
   anim.current_frame = 1
   anim.time = 0
 end
 
-draw_animation = function(anim, x, y, facing_right)
+local draw_animation = function(anim, x, y, facing_right)
   if not anim then return end
   local sprite = anim.sprites[anim.current_frame]
   draw_sprite(sprite, x, y, facing_right)
 end
 
-plusminus = function(plus, minus)
+local plusminus = function(plus, minus)
   if plus then
     if minus then
       return 0, false
@@ -122,25 +157,32 @@ plusminus = function(plus, minus)
   return 0, false
 end
 
-set_color = function(c)
+local set_color = function(c)
   local m = 255
   local a = 1
   if c.a then
-    a = c.a / max
+    a = c.a / m
   end
   love.graphics.setColor(c.r/m, c.g/m, c.b/m, a)
 end
 
 
-str = tostring
+local str = tostring
+
+-------------------------------------------------------
+-- Animations:
+local anim_idle = make_animation({0}, 1)
+local anim_run = make_animation({3, 0, 2, 0}, 0.055)
+local anim_jump = make_animation({1}, 1)
+local anim_wall = make_animation({5}, 1)
 
 --------------------------------------------------------
 -- Game code:
 
-maxy = 0
-capture_y = true
+local maxy = 0
+local capture_y = true
 
-draw_debug_text = function()
+local draw_debug_text = function()
   local y = 10
   local text = function(t)
     local x = 10
@@ -161,7 +203,7 @@ draw_debug_text = function()
   text("Trauma: " .. str(camera.trauma))
 end
 
-load_level = function(path)
+local load_level = function(path)
   level_gfx = sti(path, {"bump"})
   level_collision = bump.newWorld(32 * 2)
   start_position.x = 90
@@ -176,7 +218,7 @@ load_level = function(path)
   level_gfx:bump_init(level_collision)
 end
 
-onkey = function(key, down)
+local onkey = function(key, down)
   if key == "left" then
     input_left = down
   end
@@ -206,7 +248,7 @@ onkey = function(key, down)
   end
 end
 
-player_update = function(dt)
+local player_update = function(dt)
   local ground_collision_count
 
   -- make sure velocity is not nil
@@ -339,11 +381,11 @@ player_update = function(dt)
     local hor_collision_count
     player.x, player.y, _, hor_collision_count = level_collision:move(player, player.x + player.velx * PLAYER_SPEED * dt, player.y)
     local touches_wall = hor_collision_count > 0
-  
+
     if touches_wall then
       player.velx = 0
     end
-  
+
     local sliding = false
     if has_moved_hor and touches_wall and player.vely > WALLSLIDE then
       player.vely = player.vely - WALLSLIDE_SPEED * dt
@@ -352,10 +394,10 @@ player_update = function(dt)
         player.vely = WALLSLIDE
       end
     end
-  
+
     player.is_wallsliding = sliding
     player.is_walljumping = false
-  
+
     if player.is_wallsliding and input_jump then
       player.is_wallsliding = false
       player.is_walljumping = true
@@ -369,7 +411,7 @@ player_update = function(dt)
         player.velx = WALLJUMP_ACCELERATION
       end
     end
-  
+
     -- this if stops the infinite-jump when holding down the jump button
     if input_jump and jump_timer > JUMP_TIME then
       input_jump = false
@@ -422,7 +464,7 @@ player_update = function(dt)
   end
 end
 
-camera_update = function(dt)
+local camera_update = function(dt)
   if not camera.target_x then camera.target_x = camera.x end
   if not camera.target_y then camera.target_y = camera.x end
 
@@ -456,41 +498,7 @@ camera_update = function(dt)
   camera.y = camera.y + (camera.target_y - camera.y) * lume.clamp(camera_follow_y * dt, 0, 1)
 end
 
----------------------------------------------------------------
--- Startup code:
 
-love.graphics.setDefaultFilter("nearest", "nearest")
-sprites = love.graphics.newImage("sprites.png")
-idle_sprite = make_sprite(0)
-
-anim_idle = make_animation({0}, 1)
-anim_run = make_animation({3, 0, 2, 0}, 0.055)
-anim_jump = make_animation({1}, 1)
-anim_wall = make_animation({5}, 1)
-
-camera = {x=0, y=0, trauma=0, time=0}
-
--- STATES
-
-STATE_IDLE = 1
-STATE_RUN = 2
-STATE_JUMP = 3
-STATE_WALL = 4
-
-DASH_NONE = 0
-DASH_HOLD = 1
-DASH_DASH = 2
-
-debug_draw = false
-input_left = false
-input_right = false
-input_jump = false
-input_dash = false
-game_is_paused = false
-
-jump_timer = 0
-on_ground_timer = 0
-is_walljumping = false
 --------------------------------------------------------------
 -- Love callbacks:
 
