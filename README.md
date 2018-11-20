@@ -16,3 +16,5 @@ Day 6 (Saturday): Nothing.
 Day 7 (Sunday): 4h. Player facing input direction. Basic animations. Kinda ok camera system. Screenshake logic and adding trauma when landing.
 
 Day 8 (Monday): 1h. Dashing.
+
+Day 9 (Tuesday): 3h. luacheck fixes and death timer.
