@@ -10,12 +10,14 @@ perlin:load()
 
 love.graphics.setDefaultFilter("nearest", "nearest")
 local sprites = love.graphics.newImage("sprites.png")
-local debug_font = love.graphics.newFont(12)
+local debug_font = love.graphics.newFont("SourceCodePro-Regular.ttf", 14)
 local big_font = love.graphics.newFont("Kenney Pixel.ttf", 950)
 local pause_font = love.graphics.newFont("Boxy-Bold.ttf", 100)
 
 --------------------------------------------------------------
 -- Tweaks:
+
+local FIXED_STEP = 1/60
 
 local LONG_STACHE_FIND = 9
 local SHORT_STACHE_FIND = 5
@@ -80,6 +82,7 @@ local game_has_focus = false
 
 ----------------------------------------------------------------
 -- Gameplay:
+local fps = 0
 local jump_timer = 0
 local on_ground_timer = 0
 local is_walljumping = false
@@ -91,6 +94,18 @@ local life = 0
 -----------------------------------------------------------
 -- Util functions:
 local nop = function() end
+local str = tostring
+
+local niceval = function(x)
+  local MAX = 6
+  local val = str(lume.round(x, 0.01))
+  local c = string.len(val)
+  local space = ""
+  if c < MAX then
+    space = string.rep(" ", MAX-c)
+  end
+  return space .. val
+end
 
 local is_paused = function()
   return not game_has_focus and game_is_paused
@@ -196,8 +211,6 @@ local from01 = function(min, val, max)
   return val * (max - min) + min
 end
 
-local str = tostring
-
 -------------------------------------------------------
 -- Animations:
 local anim_idle = make_animation({0}, 1)
@@ -226,11 +239,12 @@ local draw_debug_text = function()
     y = y + h + padding*3
   end
   love.graphics.setFont(debug_font)
-  text("Y: " .. str(maxy) .. " / " .. str(player.vely))
-  text("Jump timer: " .. str(jump_timer))
-  text("On ground: " .. str(on_ground_timer))
-  text("Hor move: " .. str(player.velx))
-  text("Trauma: " .. str(camera.trauma))
+  text("FPS: " .. str(math.ceil(fps)))
+  text("Y: " .. niceval(maxy) .. " / " .. niceval(player.vely))
+  text("Jump timer: " .. niceval(jump_timer))
+  text("On ground: " .. niceval(on_ground_timer))
+  text("Hor move: " .. niceval(player.velx))
+  text("Trauma: " .. niceval(camera.trauma))
 end
 
 local load_level = function(path)
@@ -603,10 +617,18 @@ love.draw = function()
   draw_debug_text()
 end
 
+local dtsum = 0
 love.update = function(dt)
-  if not is_paused() then
-    player_update(dt)
-    camera_update(dt)
+  if dt > 0 then
+    fps = 1/dt
+  end
+  dtsum = dtsum + dt
+  while dtsum > FIXED_STEP do
+    dtsum = dtsum - FIXED_STEP
+    if not is_paused() then
+      player_update(FIXED_STEP)
+      camera_update(FIXED_STEP)
+    end
   end
   require("lurker").update()
 end
