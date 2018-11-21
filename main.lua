@@ -75,7 +75,7 @@ local input_left = false
 local input_right = false
 local input_jump = false
 local input_dash = false
-local game_is_paused = true
+local game_is_paused = false
 
 ----------------------------------------------------------------
 -- Gameplay:
