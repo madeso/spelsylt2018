@@ -16,8 +16,9 @@ local pause_font = love.graphics.newFont("Boxy-Bold.ttf", 100)
 
 --------------------------------------------------------------
 -- Autdio:
-local sfx = function(p)
-  return love.audio.newSource(p .. ".wav", "static")
+local sfx = function(p, ext)
+  ext = ext or "wav"
+  return love.audio.newSource(p .. "." .. ext, "static")
 end
 
 local sfx_jump = sfx("jump")
@@ -31,6 +32,7 @@ local sfx_walk = sfx("step")
 local sfx_dash = sfx("dash")
 local sfx_dash_timeout = sfx("dash-timeout")
 local sfx_dash_ready = sfx("dash-ready")
+local sfx_fallout = sfx("jingles_NES00", "ogg")
 
 local playsfx = function(s)
   s:play()
@@ -284,6 +286,7 @@ local load_level = function(path)
   camera.time = 0
   player.x, player.y = start_position.x, start_position.y
   camera.x, camera.y = start_position.x, start_position.y
+  player.is_alive = true
   player.vely = 0
   player.facing_right = true
   -- todo: setup player collision box
@@ -318,11 +321,16 @@ local onkey = function(key, down)
     player.x = start_position.x
     player.y = start_position.y
     level_collision:update(player, player.x, player.y)
+    player.is_alive = true
   end
 end
 
 local player_update = function(dt)
   local ground_collision_count
+
+  if not player.is_alive then
+    return
+  end
 
   if not has_stache then
     life = life - dt
@@ -547,6 +555,12 @@ local player_update = function(dt)
     end
   end
 
+  local world = level_gfx.layers["col"]
+  if player.y > world.height * 32 then
+    player.is_alive = false
+    playsfx(sfx_fallout)
+  end
+
   -- determine player animation
   local set_animation = function(o, anim, anim_state)
     if o.anim_state ~= anim_state then
@@ -616,7 +630,7 @@ end
 -- Love callbacks:
 
 love.load = function()
-  player = {x=0, y=0, vely=0, facing_right=true, animation=nil}
+  player = {x=0, y=0, vely=0, facing_right=true, animation=nil, is_alive=true}
   load_level("level1.lua")
 end
 
