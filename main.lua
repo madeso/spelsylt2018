@@ -12,6 +12,7 @@ love.graphics.setDefaultFilter("nearest", "nearest")
 local sprites = love.graphics.newImage("sprites.png")
 local debug_font = love.graphics.newFont(12)
 local big_font = love.graphics.newFont("Kenney Pixel.ttf", 950)
+local pause_font = love.graphics.newFont("Boxy-Bold.ttf", 100)
 
 --------------------------------------------------------------
 -- Tweaks:
@@ -74,7 +75,7 @@ local input_left = false
 local input_right = false
 local input_jump = false
 local input_dash = false
-local game_is_paused = false
+local game_is_paused = true
 
 ----------------------------------------------------------------
 -- Gameplay:
@@ -175,6 +176,16 @@ local set_color = function(c)
   love.graphics.setColor(c.r/m, c.g/m, c.b/m, a)
 end
 
+local draw_centered_text = function(t)
+  local font = love.graphics.getFont()
+  local tw = font:getWidth(t)
+  local th = font:getHeight()
+  local ww = love.graphics.getWidth()
+  local wh = love.graphics.getHeight()
+  local x = (ww-tw)/2
+  local y = (wh-th)/2
+  love.graphics.print(t, x, y)
+end
 
 local str = tostring
 
@@ -238,7 +249,7 @@ local onkey = function(key, down)
   if key == "up" then
     input_jump = down
   end
-  if key == "space" and down then
+  if key == "p" and down then
     game_is_paused = not game_is_paused
   end
   if key == "tab" and down then
@@ -567,8 +578,15 @@ love.draw = function()
     love.graphics.setFont(big_font)
     local alpha = {r=255, g=255, b=255, a=180}
     set_color(alpha)
-    love.graphics.print(math.ceil(life), 250, -80)
+    -- love.graphics.print(math.ceil(life), 250, -80)
+    draw_centered_text(math.ceil(life))
     set_color(WHITE)
+  end
+  if game_is_paused then
+    love.graphics.setFont(pause_font)
+    set_color(WHITE)
+    -- love.graphics.print("PAUSED", 100, 100)
+    draw_centered_text("PAUSED")
   end
   draw_debug_text()
 end
