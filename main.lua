@@ -96,13 +96,13 @@ local life = 0
 local nop = function() end
 local str = tostring
 
-local niceval = function(x)
-  local MAX = 6
-  local val = str(lume.round(x, 0.01))
+local niceval = function(x, max)
+  max = max or 4
+  local val = string.format("%.2f", x)
   local c = string.len(val)
   local space = ""
-  if c < MAX then
-    space = string.rep(" ", MAX-c)
+  if c < max then
+    space = string.rep(" ", max-c)
   end
   return space .. val
 end
@@ -240,10 +240,10 @@ local draw_debug_text = function()
   end
   love.graphics.setFont(debug_font)
   text("FPS: " .. str(math.ceil(fps)))
-  text("Y: " .. niceval(maxy) .. " / " .. niceval(player.vely))
+  text("Y: " .. niceval(maxy, 6) .. " / " .. niceval(player.vely, 7))
   text("Jump timer: " .. niceval(jump_timer))
   text("On ground: " .. niceval(on_ground_timer))
-  text("Hor move: " .. niceval(player.velx))
+  text("Hor move: " .. niceval(player.velx, 5))
   text("Trauma: " .. niceval(camera.trauma))
 end
 
