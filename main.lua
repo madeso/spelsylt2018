@@ -625,11 +625,7 @@ love.draw = function()
     local max = 255
     love.graphics.setBackgroundColor(c.r/max, c.g/max, c.b/max)
   end
-  if is_paused() then
-    set_background(LIGHT_BG)
-  else
-    set_background(DEFAULT_BG)
-  end
+  set_background(DEFAULT_BG)
   set_color(WHITE)
   local zoom = 2
   local window_width, window_height = love.graphics.getWidth(), love.graphics.getHeight()
