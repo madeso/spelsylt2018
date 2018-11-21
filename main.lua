@@ -187,6 +187,10 @@ local draw_centered_text = function(t)
   love.graphics.print(t, x, y)
 end
 
+local from01 = function(min, val, max)
+  return val * (max - min) + min
+end
+
 local str = tostring
 
 -------------------------------------------------------
@@ -577,6 +581,8 @@ love.draw = function()
   if not has_stache then
     love.graphics.setFont(big_font)
     local alpha = {r=255, g=255, b=255, a=180}
+    local a = life - math.floor(life)
+    alpha.a = from01(40, a, 230)
     set_color(alpha)
     -- love.graphics.print(math.ceil(life), 250, -80)
     draw_centered_text(math.ceil(life))
