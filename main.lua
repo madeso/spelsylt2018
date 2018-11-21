@@ -76,6 +76,7 @@ local input_right = false
 local input_jump = false
 local input_dash = false
 local game_is_paused = false
+local game_has_focus = false
 
 ----------------------------------------------------------------
 -- Gameplay:
@@ -90,6 +91,10 @@ local life = 0
 -----------------------------------------------------------
 -- Util functions:
 local nop = function() end
+
+local is_paused = function()
+  return not game_has_focus and game_is_paused
+end
 
 local perlin_noise = function(x, y)
   if not x then
@@ -552,7 +557,7 @@ love.draw = function()
     local max = 255
     love.graphics.setBackgroundColor(c.r/max, c.g/max, c.b/max)
   end
-  if game_is_paused then
+  if is_paused() then
     set_background(LIGHT_BG)
   else
     set_background(DEFAULT_BG)
@@ -589,7 +594,7 @@ love.draw = function()
     draw_centered_text(math.ceil(life))
     set_color(WHITE)
   end
-  if game_is_paused then
+  if is_paused() then
     love.graphics.setFont(pause_font)
     set_color(WHITE)
     -- love.graphics.print("PAUSED", 100, 100)
@@ -599,8 +604,7 @@ love.draw = function()
 end
 
 love.update = function(dt)
-  -- DEBUG CODE
-  if not game_is_paused then
+  if not is_paused() then
     player_update(dt)
     camera_update(dt)
   end
@@ -613,5 +617,10 @@ end
 
 love.keyreleased = function(key)
   onkey(key, false)
+end
+
+love.focus = function(f)
+  print("Focus " .. str(f))
+  game_has_focus = f
 end
 
