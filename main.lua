@@ -135,7 +135,7 @@ local niceval = function(x, max)
 end
 
 local is_paused = function()
-  return not game_has_focus and game_is_paused
+  return not input.game_has_focus or input.game_is_paused
 end
 
 local perlin_noise = function(x, y)
