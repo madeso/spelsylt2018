@@ -123,6 +123,7 @@ local nop = function() end
 local str = tostring
 
 local niceval = function(x, max)
+  if not x then return "" end
   max = max or 4
   local val = string.format("%.2f", x)
   local c = string.len(val)
