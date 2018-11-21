@@ -59,6 +59,7 @@ local WALLJUMP_ACCELERATION = 0.7
 local WALK_STEP_TIME = 0.13
 
 local DASH_TIMEOUT = 1
+local DASH_JUMP_POWER = -300
 local DASH_DY = 800
 local DASH_DX = 800
 local DASH_MIN_VELY = 240
@@ -106,6 +107,7 @@ input.input_dash = false
 input.old_input_dash = false
 input.game_is_paused = false
 input.game_has_focus = false
+input.last_moved_hor = false
 
 ----------------------------------------------------------------
 -- Gameplay:
@@ -123,6 +125,10 @@ local walk_timer = 0
 -- Util functions:
 local nop = function() end
 local str = tostring
+
+xor = function(a,b)
+    return not( not( a and not( a and b ) ) and not( b and not( a and b ) ) )
+end
 
 local niceval = function(x, max)
   if not x then return "" end
@@ -352,6 +358,7 @@ local player_update = function(dt)
       player.dash_state = DASH_HOLD
       player.dash_timer = 0
       player.vely = 0
+      player.velx = 0
       input.input_dash = false
       input.input_jump = false
       capture_y = true
@@ -520,7 +527,7 @@ local player_update = function(dt)
       input.input_jump = false
     end
   elseif player.dash_state == DASH_HOLD then
-    if has_moved_hor then
+    if has_moved_hor and not input.last_moved_hor then
       playsfx(sfx_dash)
       if input_movement > 0 then
         player.facing_right = true
@@ -535,12 +542,20 @@ local player_update = function(dt)
     if not player.facing_right then
       dash_dx = -dash_dx
     end
-    player.x, player.y, _, dash_collision_count = level_collision:move(player, player.x + dash_dx * dt, player.y + DASH_DY * dt)
+    local collision_data
+    player.x, player.y, collision_data, dash_collision_count = level_collision:move(player, player.x + dash_dx * dt, player.y + DASH_DY * dt)
 
     if dash_collision_count > 0 then
       add_trauma(0.7)
       playsfx(sfx_crash)
       player.dash_state = DASH_NONE
+      player.vely = DASH_JUMP_POWER
+      local was_wall = math.abs(collision_data[1].normal.x) > 0.5
+      if xor(player.facing_right, was_wall) then
+        player.velx = 1
+      else
+        player.velx = -1
+      end
       print("dash done")
     end
   else
@@ -694,6 +709,7 @@ love.update = function(dt)
       camera_update(FIXED_STEP)
       input.old_input_jump = input.input_jump
       input.old_input_dash = input.input_dash
+      _, input.last_moved_hor = plusminus(input.input_left, input.input_right)
     end
   end
   require("lurker").update()
