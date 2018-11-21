@@ -15,6 +15,27 @@ local big_font = love.graphics.newFont("Kenney Pixel.ttf", 950)
 local pause_font = love.graphics.newFont("Boxy-Bold.ttf", 100)
 
 --------------------------------------------------------------
+-- Autdio:
+local sfx = function(p)
+  return love.audio.newSource(p .. ".wav", "static")
+end
+
+local sfx_jump = sfx("jump")
+local sfx_hardland = sfx("hurt")
+local sfx_semihurt = sfx("semihurt")
+local sfx_hurt = sfx("crash")
+local sfx_crash = sfx("crash2")
+local sfx_walljump = sfx("walljump")
+local sfx_land = sfx("land")
+local sfx_walk = sfx("step")
+local sfx_dash = sfx("dash")
+local sfx_dash_timeout = sfx("dash-timeout")
+local sfx_dash_ready = sfx("dash-ready")
+
+local playsfx = function(s)
+  s:play()
+end
+--------------------------------------------------------------
 -- Tweaks:
 
 local FIXED_STEP = 1/60
@@ -33,6 +54,7 @@ local WALLSLIDE = 50
 local WALLSLIDE_SPEED = 1900
 local WALLJUMP = 150
 local WALLJUMP_ACCELERATION = 0.7
+local WALK_STEP_TIME = 0.13
 
 local DASH_TIMEOUT = 1
 local DASH_DY = 800
@@ -76,7 +98,9 @@ local debug_draw = false
 local input_left = false
 local input_right = false
 local input_jump = false
+local old_input_jump = false
 local input_dash = false
+local old_input_dash = false
 local game_is_paused = false
 local game_has_focus = false
 
@@ -90,6 +114,7 @@ local camera = {x=0, y=0, trauma=0, time=0}
 local start_position = {x=0, y=0}
 local has_stache = true
 local life = 0
+local walk_timer = 0
 
 -----------------------------------------------------------
 -- Util functions:
@@ -312,7 +337,7 @@ local player_update = function(dt)
 
   step_animation(player.animation, dt)
 
-  if input_dash and on_ground_timer > 0.1 and not player.is_wallsliding then
+  if input_dash and not old_input_dash and on_ground_timer > 0.1 and not player.is_wallsliding then
     if player.vely < DASH_MIN_VELY then
       player.dash_state = DASH_HOLD
       player.dash_timer = 0
@@ -322,8 +347,10 @@ local player_update = function(dt)
       capture_y = true
       maxy = 0
       jump_timer = JUMP_TIME + 1
+      playsfx(sfx_dash_ready)
     else
       print("Too high vely: " .. str(player.vely))
+      playsfx(sfx_dash_timeout)
     end
   end
 
@@ -333,6 +360,9 @@ local player_update = function(dt)
     if input_jump and jump_timer < JUMP_TIME then
       if not is_walljumping then
         player.vely = -JUMP_SPEED
+        if not old_input_jump then
+          playsfx(sfx_jump)
+        end
       else
         player.vely = -WALLJUMP
       end
@@ -350,6 +380,7 @@ local player_update = function(dt)
     if player.dash_timer > DASH_TIMEOUT then
       print("dash timeout")
       player.dash_state = DASH_NONE
+      playsfx(sfx_dash_timeout)
     end
   elseif player.dash_state == DASH_DASH then
     nop()
@@ -366,25 +397,25 @@ local player_update = function(dt)
     if player.vely > 100 then
       print("landed: " .. str(player.vely))
 
-      if player.vely > 400 then
-        local trauma = 0.3
-        local had_stache = has_stache
-        if player.vely > 700 then
-          trauma = 0.5
-          if had_stache then
-            has_stache = false
-            life = LONG_STACHE_FIND
-          end
+      if player.vely > 900 then
+        add_trauma(1.0)
+        playsfx(sfx_hurt)
+        if has_stache then
+          has_stache = false
+          life = SHORT_STACHE_FIND
         end
-        if player.vely > 900 then
-          trauma = 1.0
-          if had_stache then
-            has_stache = false
-            life = life - SHORT_STACHE_FIND
-          end
+      elseif player.vely > 700 then
+        add_trauma(0.5)
+        playsfx(sfx_semihurt)
+        if has_stache then
+          has_stache = false
+          life = LONG_STACHE_FIND
         end
-        add_trauma(trauma)
-        print("adding some trauma: " .. str(trauma))
+      elseif player.vely > 400 then
+        add_trauma(0.3)
+        playsfx(sfx_hardland)
+      else
+        playsfx(sfx_land)
       end
     end
     on_ground_timer = 0
@@ -462,6 +493,7 @@ local player_update = function(dt)
     if player.is_wallsliding and input_jump then
       player.is_wallsliding = false
       player.is_walljumping = true
+      playsfx(sfx_walljump)
       jump_timer = 0
       is_on_ground = false
       player.vely = WALLJUMP
@@ -479,6 +511,7 @@ local player_update = function(dt)
     end
   elseif player.dash_state == DASH_HOLD then
     if has_moved_hor then
+      playsfx(sfx_dash)
       if input_movement > 0 then
         player.facing_right = true
       else
@@ -496,12 +529,22 @@ local player_update = function(dt)
 
     if dash_collision_count > 0 then
       add_trauma(0.7)
+      playsfx(sfx_crash)
       player.dash_state = DASH_NONE
       print("dash done")
     end
   else
     print("invalid dash state " .. str(player.dash_state))
   end
+
+  if not player.is_wallsliding and has_moved_hor and is_on_ground then
+    walk_timer = walk_timer + dt
+    if walk_timer > WALK_STEP_TIME then
+      walk_timer = walk_timer - WALK_STEP_TIME
+      playsfx(sfx_walk)
+    end
+  end
+
   -- determine player animation
   local set_animation = function(o, anim, anim_state)
     if o.anim_state ~= anim_state then
@@ -637,6 +680,8 @@ love.update = function(dt)
     if not is_paused() then
       player_update(FIXED_STEP)
       camera_update(FIXED_STEP)
+      old_input_jump = input_jump
+      old_input_dash = input_dash
     end
   end
   require("lurker").update()
