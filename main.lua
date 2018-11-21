@@ -245,6 +245,8 @@ local draw_debug_text = function()
   text("On ground: " .. niceval(on_ground_timer))
   text("Hor move: " .. niceval(player.velx, 5))
   text("Trauma: " .. niceval(camera.trauma))
+
+  text("Y: " .. niceval(player.y) .. " / " .. niceval(camera.y))
 end
 
 local load_level = function(path)
@@ -555,6 +557,13 @@ local camera_update = function(dt)
 
   camera.x = camera.x + (camera.target_x - camera.x) * lume.clamp(CAMERA_FOLLOW_X * dt, 0, 1)
   camera.y = camera.y + (camera.target_y - camera.y) * lume.clamp(camera_follow_y * dt, 0, 1)
+
+
+  local world = level_gfx.layers["col"]
+  local ww = love.graphics.getWidth()
+  local wh = love.graphics.getHeight()
+  camera.x = lume.clamp(camera.x, ww/4, world.width * 32 - ww/4)
+  camera.y = lume.clamp(camera.y, wh/4, world.height * 32 - wh/4)
 end
 
 
