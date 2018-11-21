@@ -94,15 +94,16 @@ local DASH_DASH = 2
 
 -----------------------------------------------------------
 -- Input:
-local debug_draw = false
-local input_left = false
-local input_right = false
-local input_jump = false
-local old_input_jump = false
-local input_dash = false
-local old_input_dash = false
-local game_is_paused = false
-local game_has_focus = false
+local input = {}
+input.debug_draw = false
+input.input_left = false
+input.input_right = false
+input.input_jump = false
+input.old_input_jump = false
+input.input_dash = false
+input.old_input_dash = false
+input.game_is_paused = false
+input.game_has_focus = false
 
 ----------------------------------------------------------------
 -- Gameplay:
@@ -291,25 +292,25 @@ end
 
 local onkey = function(key, down)
   if key == "left" then
-    input_left = down
+    input.input_left = down
   end
   if key == "right" then
-    input_right = down
+    input.input_right = down
   end
   if key == "up" then
-    input_jump = down
+    input.input_jump = down
   end
   if key == "p" and down then
-    game_is_paused = not game_is_paused
+    input.game_is_paused = not input.game_is_paused
   end
   if key == "tab" and down then
-    debug_draw = not debug_draw
+    input.debug_draw = not input.debug_draw
   end
   if key == "x" and down then
     add_trauma(0.3)
   end
   if key == "c" then
-    input_dash = down
+    input.input_dash = down
   end
   if key == "r" and not down then
     camera.time = 0
@@ -337,13 +338,13 @@ local player_update = function(dt)
 
   step_animation(player.animation, dt)
 
-  if input_dash and not old_input_dash and on_ground_timer > 0.1 and not player.is_wallsliding then
+  if input.input_dash and not input.old_input_dash and on_ground_timer > 0.1 and not player.is_wallsliding then
     if player.vely < DASH_MIN_VELY then
       player.dash_state = DASH_HOLD
       player.dash_timer = 0
       player.vely = 0
-      input_dash = false
-      input_jump = false
+      input.input_dash = false
+      input.input_jump = false
       capture_y = true
       maxy = 0
       jump_timer = JUMP_TIME + 1
@@ -357,10 +358,10 @@ local player_update = function(dt)
   if player.dash_state == DASH_NONE then
     player.vely = player.vely + GRAVITY * dt
 
-    if input_jump and jump_timer < JUMP_TIME then
+    if input.input_jump and jump_timer < JUMP_TIME then
       if not is_walljumping then
         player.vely = -JUMP_SPEED
-        if not old_input_jump then
+        if not input.old_input_jump then
           playsfx(sfx_jump)
         end
       else
@@ -368,7 +369,7 @@ local player_update = function(dt)
       end
     end
     -- increase jump timer or set it beyond the max when released, so release+hold wont rejump
-    if input_jump then
+    if input.input_jump then
       jump_timer = jump_timer + dt
       capture_y = true
       maxy = 0
@@ -434,12 +435,12 @@ local player_update = function(dt)
     jump_timer = JUMP_TIME + 1
   end
   -- if we was on the ground recently and we are not pressing the jump button
-  if on_ground_timer < ON_GROUND_REACTION and not input_jump then
+  if on_ground_timer < ON_GROUND_REACTION and not input.input_jump then
     jump_timer = 0
   end
 
   -------------- horizontal movment:
-  local input_movement, has_moved_hor = plusminus(input_right, input_left)
+  local input_movement, has_moved_hor = plusminus(input.input_right, input.input_left)
   if player.dash_state == DASH_NONE then
     local control = 1
     if has_moved_hor then
@@ -490,7 +491,7 @@ local player_update = function(dt)
     player.is_wallsliding = sliding
     player.is_walljumping = false
 
-    if player.is_wallsliding and input_jump then
+    if player.is_wallsliding and input.input_jump then
       player.is_wallsliding = false
       player.is_walljumping = true
       playsfx(sfx_walljump)
@@ -506,8 +507,8 @@ local player_update = function(dt)
     end
 
     -- this if stops the infinite-jump when holding down the jump button
-    if input_jump and jump_timer > JUMP_TIME then
-      input_jump = false
+    if input.input_jump and jump_timer > JUMP_TIME then
+      input.input_jump = false
     end
   elseif player.dash_state == DASH_HOLD then
     if has_moved_hor then
@@ -643,7 +644,7 @@ love.draw = function()
   love.graphics.translate(-window_width/2, -window_height/2)
   love.graphics.translate(-camera_x, -camera_y)
   love.graphics.scale(zoom, zoom)
-  if debug_draw then
+  if input.debug_draw then
     bump_debug.draw(level_collision)
   end
   -- level_gfx:draw(-camera_x/zoom, -camera_y/zoom, zoom, zoom)
@@ -680,8 +681,8 @@ love.update = function(dt)
     if not is_paused() then
       player_update(FIXED_STEP)
       camera_update(FIXED_STEP)
-      old_input_jump = input_jump
-      old_input_dash = input_dash
+      input.old_input_jump = input.input_jump
+      input.old_input_dash = input.input_dash
     end
   end
   require("lurker").update()
@@ -697,6 +698,6 @@ end
 
 love.focus = function(f)
   print("Focus " .. str(f))
-  game_has_focus = f
+  input.game_has_focus = f
 end
 
