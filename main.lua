@@ -347,16 +347,17 @@ local player_update = function(dt)
 
       if player.vely > 400 then
         local trauma = 0.3
+        local had_stache = has_stache
         if player.vely > 700 then
           trauma = 0.5
-          if has_stache then
+          if had_stache then
             has_stache = false
             life = LONG_STACHE_FIND
           end
         end
         if player.vely > 900 then
           trauma = 1.0
-          if has_stache then
+          if had_stache then
             has_stache = false
             life = life - SHORT_STACHE_FIND
           end
