@@ -256,11 +256,12 @@ end
 
 -------------------------------------------------------
 -- Animations:
-local anim_idle = make_animation({1}, 1)
-local anim_run = make_animation({3, 4, 5, 4}, 0.055)
-local anim_jump = make_animation({2}, 1)
-local anim_halt = make_animation({6}, 1)
-local anim_wall = make_animation({7}, 1)
+local anim = {}
+anim.idle = make_animation({1}, 1)
+anim.run = make_animation({3, 4, 5, 4}, 0.055)
+anim.jump = make_animation({2}, 1)
+anim.halt = make_animation({6}, 1)
+anim.wall = make_animation({7}, 1)
 
 --------------------------------------------------------
 -- Game code:
@@ -358,7 +359,7 @@ local player_update = function(dt)
   -- make sure velocity is not nil
   if not player.vely then player.vely = 0 end
   if not player.velx then player.velx = 0 end
-  if not player.animation then player.animation = anim_idle end
+  if not player.animation then player.animation = anim.idle end
 
   step_animation(player.animation, dt)
 
@@ -586,9 +587,9 @@ local player_update = function(dt)
   end
 
   -- determine player animation
-  local set_animation = function(o, anim, anim_state)
+  local set_animation = function(o, an, anim_state)
     if o.anim_state ~= anim_state then
-      o.animation = anim
+      o.animation = an
       o.anim_state = anim_state
       reset_animation(o.animation)
     end
@@ -597,18 +598,18 @@ local player_update = function(dt)
     if has_moved_hor then
       local halt = (input_movement > 0 and player.velx < 0) or (input_movement < 0 and player.velx > 0)
       if halt then
-        set_animation(player, anim_halt, state.STATE_HALT)
+        set_animation(player, anim.halt, state.STATE_HALT)
       else
-        set_animation(player, anim_run, state.STATE_RUN)
+        set_animation(player, anim.run, state.STATE_RUN)
       end
     else
-      set_animation(player, anim_idle, state.STATE_IDLE)
+      set_animation(player, anim.idle, state.STATE_IDLE)
     end
   else
     if player.is_wallsliding then
-      set_animation(player, anim_wall, state.STATE_WALL)
+      set_animation(player, anim.wall, state.STATE_WALL)
     else
-      set_animation(player, anim_jump, state.STATE_JUMP)
+      set_animation(player, anim.jump, state.STATE_JUMP)
     end
   end
 end
