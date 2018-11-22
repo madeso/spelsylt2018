@@ -98,6 +98,9 @@ state.STATE_RUN = 2
 state.STATE_JUMP = 3
 state.STATE_WALL = 4
 state.STATE_HALT = 5
+state.STATE_FALL = 6
+state.STATE_DASH = 7
+state.STATE_DASH_HOLD = 8
 
 local DASH_NONE = 0
 local DASH_HOLD = 1
@@ -259,9 +262,12 @@ end
 local anim = {}
 anim.idle = make_animation({1}, 1)
 anim.run = make_animation({3, 4, 5, 4}, 0.055)
-anim.jump = make_animation({2}, 1)
-anim.halt = make_animation({6}, 1)
-anim.wall = make_animation({7}, 1)
+anim.jump = make_animation({6}, 1)
+anim.fall = make_animation({7}, 1)
+anim.dash_hold = make_animation({2}, 1)
+anim.dash = make_animation({3}, 1)
+anim.halt = make_animation({8}, 1)
+anim.wall = make_animation({9}, 1)
 
 --------------------------------------------------------
 -- Game code:
@@ -290,6 +296,7 @@ local draw_debug_text = function()
   text("On ground: " .. niceval(on_ground_timer))
   text("Hor move: " .. niceval(player.velx, 5))
   text("Trauma: " .. niceval(camera.trauma))
+  text("Right: " .. str(player.facing_right))
 
   text("Y: " .. niceval(player.y) .. " / " .. niceval(camera.y))
 end
@@ -594,24 +601,37 @@ local player_update = function(dt)
       reset_animation(o.animation)
     end
   end
-  if is_on_ground then
-    if has_moved_hor then
-      local halt = (input_movement > 0 and player.velx < 0) or (input_movement < 0 and player.velx > 0)
-      if halt then
-        set_animation(player, anim.halt, state.STATE_HALT)
+
+  -- set player animation
+  if player.dash_state == DASH_NONE then
+    if is_on_ground then
+      if has_moved_hor then
+        local halt = (input_movement > 0 and player.velx < 0) or (input_movement < 0 and player.velx > 0)
+        if halt then
+          set_animation(player, anim.halt, state.STATE_HALT)
+        else
+          set_animation(player, anim.run, state.STATE_RUN)
+        end
       else
-        set_animation(player, anim.run, state.STATE_RUN)
+        set_animation(player, anim.idle, state.STATE_IDLE)
       end
     else
-      set_animation(player, anim.idle, state.STATE_IDLE)
+      if player.is_wallsliding then
+        set_animation(player, anim.wall, state.STATE_WALL)
+      else
+        if player.vely < 0 then
+          set_animation(player, anim.jump, state.STATE_JUMP)
+        else
+          set_animation(player, anim.fall, state.STATE_FALL)
+        end
+      end
     end
+  elseif player.dash_state == DASH_HOLD then
+    set_animation(player, anim.dash_hold, state.STATE_DASH_HOLD)
   else
-    if player.is_wallsliding then
-      set_animation(player, anim.wall, state.STATE_WALL)
-    else
-      set_animation(player, anim.jump, state.STATE_JUMP)
-    end
+    set_animation(player, anim.dash, state.STATE_DASH)
   end
+
 end
 
 local camera_update = function(dt)
@@ -690,6 +710,10 @@ love.draw = function()
   end
   -- level_gfx:draw(-camera_x/zoom, -camera_y/zoom, zoom, zoom)
   level_gfx:drawLayer(level_gfx.layers["col"])
+  local detail_layer = level_gfx.layers["detail"]
+  if detail_layer then
+    level_gfx:drawLayer(detail_layer)
+  end
   draw_animation(player.animation, player.x, player.y, player.facing_right)
   love.graphics.pop()
   if not has_stache then
