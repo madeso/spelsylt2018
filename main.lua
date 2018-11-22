@@ -279,6 +279,39 @@ anim.face = make_animation({10}, 1)
 anim.no_stache = make_animation({11}, 1)
 
 --------------------------------------------------------
+-- Dust:
+local dust = love.graphics.newParticleSystem(sprites)
+dust:setParticleLifetime(0.5, 1)
+dust:setQuads(make_sprite(14), make_sprite(15), make_sprite(16), make_sprite(17))
+dust:setOffset(0, 0)
+
+local dustwave = function(a, b)
+  dust:setSpeed(300, 490)
+  dust:setLinearDamping(10)
+  dust:setDirection(a)
+  dust:emit(2)
+  dust:setDirection(b)
+  dust:emit(2)
+  dust:setSpeed(0,0)
+end
+
+local add_dust_floor = function()
+  dust:setPosition(player.x, player.y+10)
+  dustwave(0, math.pi)
+end
+
+local add_dust_wall = function()
+  local dx
+  local step = 9
+  if not player.facing_right then
+    dx = -step
+  else
+    dx = step
+  end
+  dust:setPosition(player.x + dx, player.y)
+  dustwave(-math.pi/2, math.pi/2)
+end
+--------------------------------------------------------
 -- Game code:
 
 local maxy = 0
@@ -485,6 +518,7 @@ local player_update = function(dt)
   if is_on_ground then
     if player.vely > 100 then
       print("landed: " .. str(player.vely))
+      add_dust_floor()
 
       if player.vely > 900 then
         add_trauma(1.0)
@@ -583,6 +617,7 @@ local player_update = function(dt)
       player.is_wallsliding = false
       player.is_walljumping = true
       playsfx(sfx.walljump)
+      add_dust_wall()
       jump_timer = 0
       is_on_ground = false
       player.vely = WALLJUMP
@@ -631,6 +666,11 @@ local player_update = function(dt)
         player.velx = -1
       end
       print("dash done")
+      if was_wall then
+        add_dust_wall()
+      else
+        add_dust_floor()
+      end
     end
   else
     print("invalid dash state " .. str(player.dash_state))
@@ -640,16 +680,27 @@ local player_update = function(dt)
   local last_halt = player.halt
   player.halt = halt
 
+  dust:setPosition(player.x, player.y+10)
   if not halt and not player.is_wallsliding and has_moved_hor and is_on_ground then
     walk_timer = walk_timer + dt
     if walk_timer > WALK_STEP_TIME then
       walk_timer = walk_timer - WALK_STEP_TIME
       playsfx(sfx.walk)
+      dust:emit(1)
     end
   end
 
   if is_on_ground and halt and not last_halt then
     playsfx(sfx.change_dir)
+    if not player.facing_right then
+      dust:setDirection(0)
+    else
+      dust:setDirection(math.pi)
+    end
+    dust:setSpeed(490)
+    dust:setLinearDamping(10)
+    dust:emit(1)
+    dust:setSpeed(0,0)
   end
 
   if player.y > world.col.height * 32 then
@@ -792,6 +843,7 @@ love.draw = function()
     world.level_gfx:drawLayer(detail_layer)
   end
   draw_animation(player.animation, player.x, player.y, player.facing_right)
+  love.graphics.draw(dust, 0, 0)
   if player.face then
     draw_animation(player.face.animation, player.x, player.y - 10, xor(player.facing_right, player.is_wallsliding))
   end
@@ -831,6 +883,7 @@ love.update = function(dt)
   dtsum = dtsum + dt
   while dtsum > FIXED_STEP do
     dtsum = dtsum - FIXED_STEP
+    dust:update(FIXED_STEP)
     if not is_paused() then
       if not player.is_alive or player.next_level then
         player.reset_timer = player.reset_timer - FIXED_STEP
