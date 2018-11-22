@@ -351,7 +351,7 @@ gids.NEXT_LEVEL = 10
 local load_spawn_positions = function()
   if not world.level_gfx then return end
 
-  if not start_position then start_position = {} end
+  if not start_position then start_position = {x=0, y=0} end
 
   local spawn = world.level_gfx.layers["spawn"]
   if spawn then
@@ -372,6 +372,7 @@ load_spawn_positions()
 
 local load_level = function(path)
   print("loading level " .. path)
+  if not player then player = {} end
   world.level_gfx = sti(path, {"bump"})
   world.level_collision = bump.newWorld(32 * 2)
   world.col = world.level_gfx.layers["col"]
@@ -807,12 +808,6 @@ end
 --------------------------------------------------------------
 -- Love callbacks:
 
-love.load = function()
-  player = {x=0, y=0, vely=0, facing_right=true, animation=nil, reset_timer=0, is_alive=true, next_level=false}
-  player.__tostring = function() return "struct Player" end
-  start_position = {x=0, y=0}
-end
-
 love.draw = function()
   local set_background = function(c)
     local max = 255
@@ -914,6 +909,11 @@ love.focus = function(f)
   input.game_has_focus = f
 end
 
+
+if not player then
+  player = {x=0, y=0, vely=0, facing_right=true, animation=nil, reset_timer=0, is_alive=true, next_level=false}
+  player.__tostring = function() return "struct Player" end
+end
 
 if not world.level_gfx then
   load_level("level1.lua")
