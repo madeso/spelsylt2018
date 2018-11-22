@@ -106,6 +106,9 @@ state.STATE_FALL = 6
 state.STATE_DASH = 7
 state.STATE_DASH_HOLD = 8
 
+state.FACE = 1
+state.NO_STACHE = 2
+
 local DASH_NONE = 0
 local DASH_HOLD = 1
 local DASH_DASH = 2
@@ -271,6 +274,8 @@ anim.dash_hold = make_animation({2}, 1)
 anim.dash = make_animation({3}, 1)
 anim.halt = make_animation({8}, 1)
 anim.wall = make_animation({9}, 1)
+anim.face = make_animation({10}, 1)
+anim.no_stache = make_animation({11}, 1)
 
 --------------------------------------------------------
 -- Game code:
@@ -385,6 +390,7 @@ local reset_world = function()
   camera.y = player.y
   player.velx = 0
   player.vely = 0
+  player.facing_right = true
   jump_timer = JUMP_TIME + 1
   player.reset_timer = 0
   player.is_alive = true
@@ -665,6 +671,14 @@ local player_update = function(dt)
     end
   end
 
+  -- set face animation
+  if not player.face then player.face = {} end
+  if has_stache then
+    set_animation(player.face, anim.face, state.FACE)
+  else
+    set_animation(player.face, anim.no_stache, state.NO_STACHE)
+  end
+
   -- set player animation
   if player.dash_state == DASH_NONE then
     if is_on_ground then
@@ -778,6 +792,9 @@ love.draw = function()
     level_gfx:drawLayer(detail_layer)
   end
   draw_animation(player.animation, player.x, player.y, player.facing_right)
+  if player.face then
+    draw_animation(player.face.animation, player.x, player.y - 10, xor(player.facing_right, player.is_wallsliding))
+  end
   love.graphics.pop()
   if not has_stache then
     love.graphics.setFont(big_font)
