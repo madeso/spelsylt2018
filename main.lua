@@ -854,6 +854,16 @@ love.draw = function()
   if input.debug_draw then
     bump_debug.draw(world.level_collision)
   end
+  local para = world.level_gfx.layers["parallax"]
+  if para then
+    love.graphics.push()
+    local px = camera.x / (world.col.width * 32)
+    local py = camera.y / (world.col.height * 32)
+    local extent = 640
+    love.graphics.translate(px * extent, py * extent / 2)
+    world.level_gfx:drawLayer(para)
+    love.graphics.pop()
+  end
   world.level_gfx:drawLayer(world.level_gfx.layers["col"])
   local detail_layer = world.level_gfx.layers["detail"]
   if detail_layer then
