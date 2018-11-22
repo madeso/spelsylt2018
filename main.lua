@@ -35,6 +35,7 @@ local load_sfx = function()
   sounds.dash_timeout = sfx("dash-timeout")
   sounds.dash_ready = sfx("dash-ready")
   sounds.fallout = sfx("jingles_NES00", "ogg")
+  sounds.win = sfx("jingles_NES03", "ogg")
   sounds.change_dir = sfx("changedir")
 
   return sounds
@@ -335,6 +336,7 @@ local load_level = function(path)
   player.x, player.y = start_position.x, start_position.y
   camera.x, camera.y = start_position.x, start_position.y
   player.is_alive = true
+  player.next_level = false
   player.vely = 0
   player.facing_right = true
   -- todo: setup player collision box
@@ -379,6 +381,7 @@ local onkey = function(key, down)
     player.vely = 0
     jump_timer = JUMP_TIME + 1
     player.is_alive = true
+    player.next_level = false
   end
 end
 
@@ -389,6 +392,9 @@ local player_update = function(dt)
     return
   end
 
+  if player.next_level then
+    return
+  end
   if not has_stache then
     life = life - dt
     if life < 0 then
@@ -637,6 +643,11 @@ local player_update = function(dt)
     playsfx(sfx.fallout)
   end
 
+  if player.x > world.width * 32 then
+    player.next_level = true
+    playsfx(sfx.win)
+  end
+
   -- determine player animation
   local set_animation = function(o, an, anim_state)
     if o.anim_state ~= anim_state then
@@ -723,7 +734,7 @@ end
 -- Love callbacks:
 
 love.load = function()
-  player = {x=0, y=0, vely=0, facing_right=true, animation=nil, is_alive=true}
+  player = {x=0, y=0, vely=0, facing_right=true, animation=nil, is_alive=true, next_level=false}
   start_position = {x=0, y=0}
   load_level("level1.lua")
 end
