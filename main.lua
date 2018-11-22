@@ -35,6 +35,7 @@ local load_sfx = function()
   sounds.dash_timeout = sfx("dash-timeout")
   sounds.dash_ready = sfx("dash-ready")
   sounds.fallout = sfx("jingles_NES00", "ogg")
+  sounds.change_dir = sfx("changedir")
 
   return sounds
 end
@@ -579,12 +580,20 @@ local player_update = function(dt)
     print("invalid dash state " .. str(player.dash_state))
   end
 
-  if not player.is_wallsliding and has_moved_hor and is_on_ground then
+  local halt = (input_movement > 0 and player.velx < 0) or (input_movement < 0 and player.velx > 0)
+  local last_halt = player.halt
+  player.halt = halt
+
+  if not halt and not player.is_wallsliding and has_moved_hor and is_on_ground then
     walk_timer = walk_timer + dt
     if walk_timer > WALK_STEP_TIME then
       walk_timer = walk_timer - WALK_STEP_TIME
       playsfx(sfx.walk)
     end
+  end
+
+  if is_on_ground and halt and not last_halt then
+    playsfx(sfx.change_dir)
   end
 
   local world = level_gfx.layers["col"]
@@ -606,7 +615,6 @@ local player_update = function(dt)
   if player.dash_state == DASH_NONE then
     if is_on_ground then
       if has_moved_hor then
-        local halt = (input_movement > 0 and player.velx < 0) or (input_movement < 0 and player.velx > 0)
         if halt then
           set_animation(player, anim.halt, state.STATE_HALT)
         else
