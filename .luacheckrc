@@ -7,5 +7,5 @@ globals = {
   -- standard lua ignore return value convention
   "_",
   -- needs to be globals as reload doesn't like it when they are not
-  "player", "level_gfx", "level_collision", "start_position"
+  "player", "world", "start_position"
 }

@@ -14,6 +14,7 @@ local debug_font = love.graphics.newFont("SourceCodePro-Regular.ttf", 14)
 local big_font = love.graphics.newFont("Kenney Pixel.ttf", 950)
 local pause_font = love.graphics.newFont("Boxy-Bold.ttf", 100)
 
+if not world then world = {} end
 --------------------------------------------------------------
 -- Autdio:
 local load_sfx = function()
@@ -315,11 +316,11 @@ gids.PLAYER_SPAWN = 4
 gids.NEXT_LEVEL = 10
 
 local load_spawn_positions = function()
-  if not level_gfx then return end
+  if not world.level_gfx then return end
 
   if not start_position then start_position = {} end
 
-  local spawn = level_gfx.layers["spawn"]
+  local spawn = world.level_gfx.layers["spawn"]
   if spawn then
     for _,o in ipairs(spawn.objects) do
       if o.gid == gids.PLAYER_SPAWN then
@@ -337,8 +338,10 @@ end
 load_spawn_positions()
 
 local load_level = function(path)
-  level_gfx = sti(path, {"bump"})
-  level_collision = bump.newWorld(32 * 2)
+  print("loading level " .. path)
+  world.level_gfx = sti(path, {"bump"})
+  world.level_collision = bump.newWorld(32 * 2)
+  world.col = world.level_gfx.layers["col"]
   camera.time = 0
   load_spawn_positions()
   player.x, player.y = start_position.x, start_position.y
@@ -349,8 +352,8 @@ local load_level = function(path)
   player.vely = 0
   player.facing_right = true
   -- todo: setup player collision box
-  level_collision:add(player, player.x, player.y, 32, 32)
-  level_gfx:bump_init(level_collision)
+  world.level_collision:add(player, player.x, player.y, 32, 32)
+  world.level_gfx:bump_init(world.level_collision)
 end
 
 
@@ -383,7 +386,7 @@ local reset_world = function()
   has_stache = true
   player.x = start_position.x
   player.y = start_position.y
-  level_collision:update(player, player.x, player.y)
+  world.level_collision:update(player, player.x, player.y)
   camera.target_x = player.x
   camera.target_y = player.y
   camera.x = player.x
@@ -476,7 +479,7 @@ local player_update = function(dt)
   end
 
   ----------- vertical movment:
-  player.x, player.y, _, ground_collision_count = level_collision:move(player, player.x, player.y + player.vely*dt)
+  player.x, player.y, _, ground_collision_count = world.level_collision:move(player, player.x, player.y + player.vely*dt)
   local is_on_ground = ground_collision_count > 0 and player.vely >= 0
   player.is_on_ground = is_on_ground
   if is_on_ground then
@@ -557,7 +560,7 @@ local player_update = function(dt)
     end
 
     local hor_collision_count
-    player.x, player.y, _, hor_collision_count = level_collision:move(player, player.x + player.velx * PLAYER_SPEED * dt, player.y)
+    player.x, player.y, _, hor_collision_count = world.level_collision:move(player, player.x + player.velx * PLAYER_SPEED * dt, player.y)
     local touches_wall = hor_collision_count > 0
 
     if touches_wall then
@@ -612,7 +615,7 @@ local player_update = function(dt)
       dash_dx = -dash_dx
     end
     local collision_data
-    player.x, player.y, collision_data, dash_collision_count = level_collision:move(player, player.x + dash_dx * dt, player.y + DASH_DY * dt)
+    player.x, player.y, collision_data, dash_collision_count = world.level_collision:move(player, player.x + dash_dx * dt, player.y + DASH_DY * dt)
 
     if dash_collision_count > 0 then
       add_trauma(0.7)
@@ -649,14 +652,13 @@ local player_update = function(dt)
     playsfx(sfx.change_dir)
   end
 
-  local world = level_gfx.layers["col"]
-  if player.y > world.height * 32 then
+  if player.y > world.col.height * 32 then
     player.is_alive = false
     player.reset_timer = FALLOUT_TIME
     playsfx(sfx.fallout)
   end
 
-  if player.x > world.width * 32 then
+  if player.x > world.col.width * 32 then
     player.next_level = true
     player.reset_timer = WIN_TIME
     playsfx(sfx.win)
@@ -744,11 +746,10 @@ local camera_update = function(dt)
   camera.y = camera.y + (camera.target_y - camera.y) * lume.clamp(camera_follow_y * dt, 0, 1)
 
 
-  local world = level_gfx.layers["col"]
   local ww = love.graphics.getWidth()
   local wh = love.graphics.getHeight()
-  camera.x = lume.clamp(camera.x, ww/4, world.width * 32 - ww/4)
-  camera.y = lume.clamp(camera.y, wh/4, world.height * 32 - wh/4)
+  camera.x = lume.clamp(camera.x, ww/4, world.col.width * 32 - ww/4)
+  camera.y = lume.clamp(camera.y, wh/4, world.col.height * 32 - wh/4)
 end
 
 
@@ -757,8 +758,8 @@ end
 
 love.load = function()
   player = {x=0, y=0, vely=0, facing_right=true, animation=nil, reset_timer=0, is_alive=true, next_level=false}
+  player.__tostring = function() return "struct Player" end
   start_position = {x=0, y=0}
-  load_level("level1.lua")
 end
 
 love.draw = function()
@@ -783,13 +784,12 @@ love.draw = function()
   love.graphics.translate(-camera_x, -camera_y)
   love.graphics.scale(zoom, zoom)
   if input.debug_draw then
-    bump_debug.draw(level_collision)
+    bump_debug.draw(world.level_collision)
   end
-  -- level_gfx:draw(-camera_x/zoom, -camera_y/zoom, zoom, zoom)
-  level_gfx:drawLayer(level_gfx.layers["col"])
-  local detail_layer = level_gfx.layers["detail"]
+  world.level_gfx:drawLayer(world.level_gfx.layers["col"])
+  local detail_layer = world.level_gfx.layers["detail"]
   if detail_layer then
-    level_gfx:drawLayer(detail_layer)
+    world.level_gfx:drawLayer(detail_layer)
   end
   draw_animation(player.animation, player.x, player.y, player.facing_right)
   if player.face then
@@ -859,5 +859,10 @@ end
 love.focus = function(f)
   print("Focus " .. str(f))
   input.game_has_focus = f
+end
+
+
+if not world.level_gfx then
+  load_level("level1.lua")
 end
 
