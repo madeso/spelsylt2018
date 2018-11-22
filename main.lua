@@ -51,6 +51,8 @@ end
 
 local FIXED_STEP = 1/60
 
+local FALLOUT_TIME = 2
+local WIN_TIME = 1.5
 local LONG_STACHE_FIND = 9
 local SHORT_STACHE_FIND = 5
 local PLAYER_SPEED = 200
@@ -298,6 +300,7 @@ local draw_debug_text = function()
   text("Hor move: " .. niceval(player.velx, 5))
   text("Trauma: " .. niceval(camera.trauma))
   text("Right: " .. str(player.facing_right))
+  text("Reset timer: " .. niceval(player.reset_timer))
 
   text("Y: " .. niceval(player.y) .. " / " .. niceval(camera.y))
 end
@@ -336,6 +339,7 @@ local load_level = function(path)
   player.x, player.y = start_position.x, start_position.y
   camera.x, camera.y = start_position.x, start_position.y
   player.is_alive = true
+  player.reset_timer = 0
   player.next_level = false
   player.vely = 0
   player.facing_right = true
@@ -367,22 +371,24 @@ local onkey = function(key, down)
   if key == "c" then
     input.input_dash = down
   end
-  if key == "r" and not down then
-    camera.time = 0
-    has_stache = true
-    player.x = start_position.x
-    player.y = start_position.y
-    level_collision:update(player, player.x, player.y)
-    camera.target_x = player.x
-    camera.target_y = player.y
-    camera.x = player.x
-    camera.y = player.y
-    player.velx = 0
-    player.vely = 0
-    jump_timer = JUMP_TIME + 1
-    player.is_alive = true
-    player.next_level = false
-  end
+end
+
+local reset_world = function()
+  camera.time = 0
+  has_stache = true
+  player.x = start_position.x
+  player.y = start_position.y
+  level_collision:update(player, player.x, player.y)
+  camera.target_x = player.x
+  camera.target_y = player.y
+  camera.x = player.x
+  camera.y = player.y
+  player.velx = 0
+  player.vely = 0
+  jump_timer = JUMP_TIME + 1
+  player.reset_timer = 0
+  player.is_alive = true
+  player.next_level = false
 end
 
 local player_update = function(dt)
@@ -640,11 +646,13 @@ local player_update = function(dt)
   local world = level_gfx.layers["col"]
   if player.y > world.height * 32 then
     player.is_alive = false
+    player.reset_timer = FALLOUT_TIME
     playsfx(sfx.fallout)
   end
 
   if player.x > world.width * 32 then
     player.next_level = true
+    player.reset_timer = WIN_TIME
     playsfx(sfx.win)
   end
 
@@ -734,7 +742,7 @@ end
 -- Love callbacks:
 
 love.load = function()
-  player = {x=0, y=0, vely=0, facing_right=true, animation=nil, is_alive=true, next_level=false}
+  player = {x=0, y=0, vely=0, facing_right=true, animation=nil, reset_timer=0, is_alive=true, next_level=false}
   start_position = {x=0, y=0}
   load_level("level1.lua")
 end
@@ -787,6 +795,14 @@ love.draw = function()
     -- love.graphics.print("PAUSED", 100, 100)
     draw_centered_text("PAUSED")
   end
+  if not player.is_alive then
+    love.graphics.setFont(pause_font)
+    draw_centered_text("game over")
+  end
+  if player.next_level then
+    love.graphics.setFont(pause_font)
+    draw_centered_text("good job")
+  end
   draw_debug_text()
 end
 
@@ -799,6 +815,12 @@ love.update = function(dt)
   while dtsum > FIXED_STEP do
     dtsum = dtsum - FIXED_STEP
     if not is_paused() then
+      if not player.is_alive or player.next_level then
+        player.reset_timer = player.reset_timer - FIXED_STEP
+        if player.reset_timer < 0 then
+          reset_world()
+        end
+      end
       player_update(FIXED_STEP)
       camera_update(FIXED_STEP)
       input.old_input_jump = input.input_jump
