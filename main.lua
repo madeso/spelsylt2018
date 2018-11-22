@@ -85,11 +85,12 @@ local WHITE      = {r=255, g=255, b=255}
 
 -----------------------------------------------------------
 -- States:
-
-local STATE_IDLE = 1
-local STATE_RUN = 2
-local STATE_JUMP = 3
-local STATE_WALL = 4
+local state = {}
+state.STATE_IDLE = 1
+state.STATE_RUN = 2
+state.STATE_JUMP = 3
+state.STATE_WALL = 4
+state.STATE_HALT = 5
 
 local DASH_NONE = 0
 local DASH_HOLD = 1
@@ -178,7 +179,7 @@ local make_animation = function(frames, speed)
   local anim = {}
   anim.sprites = {}
   for i, f in ipairs(frames) do
-    anim.sprites[i] = make_sprite(f)
+    anim.sprites[i] = make_sprite(f - 1)
   end
   anim.time = 0
   anim.speed = speed
@@ -248,10 +249,11 @@ end
 
 -------------------------------------------------------
 -- Animations:
-local anim_idle = make_animation({0}, 1)
-local anim_run = make_animation({3, 0, 2, 0}, 0.055)
-local anim_jump = make_animation({1}, 1)
-local anim_wall = make_animation({5}, 1)
+local anim_idle = make_animation({1}, 1)
+local anim_run = make_animation({3, 4, 5, 4}, 0.055)
+local anim_jump = make_animation({2}, 1)
+local anim_halt = make_animation({6}, 1)
+local anim_wall = make_animation({7}, 1)
 
 --------------------------------------------------------
 -- Game code:
@@ -586,15 +588,20 @@ local player_update = function(dt)
   end
   if is_on_ground then
     if has_moved_hor then
-      set_animation(player, anim_run, STATE_RUN)
+      local halt = (input_movement > 0 and player.velx < 0) or (input_movement < 0 and player.velx > 0)
+      if halt then
+        set_animation(player, anim_halt, state.STATE_HALT)
+      else
+        set_animation(player, anim_run, state.STATE_RUN)
+      end
     else
-      set_animation(player, anim_idle, STATE_IDLE)
+      set_animation(player, anim_idle, state.STATE_IDLE)
     end
   else
     if player.is_wallsliding then
-      set_animation(player, anim_wall, STATE_WALL)
+      set_animation(player, anim_wall, state.STATE_WALL)
     else
-      set_animation(player, anim_jump, STATE_JUMP)
+      set_animation(player, anim_jump, state.STATE_JUMP)
     end
   end
 end
