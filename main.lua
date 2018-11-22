@@ -128,7 +128,6 @@ local jump_timer = 0
 local on_ground_timer = 0
 local is_walljumping = false
 local camera = {x=0, y=0, trauma=0, time=0}
-local start_position = {x=0, y=0}
 local has_stache = true
 local life = 0
 local walk_timer = 0
@@ -302,12 +301,37 @@ local draw_debug_text = function()
   text("Y: " .. niceval(player.y) .. " / " .. niceval(camera.y))
 end
 
+local gids = {}
+gids.PLAYER_SPAWN = 4
+gids.NEXT_LEVEL = 10
+
+local load_spawn_positions = function()
+  if not level_gfx then return end
+
+  if not start_position then start_position = {} end
+
+  local spawn = level_gfx.layers["spawn"]
+  if spawn then
+    for _,o in ipairs(spawn.objects) do
+      if o.gid == gids.PLAYER_SPAWN then
+        start_position.x = o.x
+        start_position.y = o.y - 32
+      elseif o.gid == gids.NEXT_LEVEL then
+        print("got next level")
+      else
+        print("Invalid gid: ", o.gid)
+      end
+    end
+  end
+end
+
+load_spawn_positions()
+
 local load_level = function(path)
   level_gfx = sti(path, {"bump"})
   level_collision = bump.newWorld(32 * 2)
-  start_position.x = 90
-  start_position.y = 0
   camera.time = 0
+  load_spawn_positions()
   player.x, player.y = start_position.x, start_position.y
   camera.x, camera.y = start_position.x, start_position.y
   player.is_alive = true
@@ -317,6 +341,7 @@ local load_level = function(path)
   level_collision:add(player, player.x, player.y, 32, 32)
   level_gfx:bump_init(level_collision)
 end
+
 
 local onkey = function(key, down)
   if key == "left" then
@@ -342,9 +367,17 @@ local onkey = function(key, down)
   end
   if key == "r" and not down then
     camera.time = 0
+    has_stache = true
     player.x = start_position.x
     player.y = start_position.y
     level_collision:update(player, player.x, player.y)
+    camera.target_x = player.x
+    camera.target_y = player.y
+    camera.x = player.x
+    camera.y = player.y
+    player.velx = 0
+    player.vely = 0
+    jump_timer = JUMP_TIME + 1
     player.is_alive = true
   end
 end
@@ -566,6 +599,8 @@ local player_update = function(dt)
     if dash_collision_count > 0 then
       add_trauma(0.7)
       playsfx(sfx.crash)
+      camera.target_x = player.x
+      camera.target_y = player.y
       player.dash_state = DASH_NONE
       player.vely = DASH_JUMP_POWER
       local was_wall = math.abs(collision_data[1].normal.x) > 0.5
@@ -689,6 +724,7 @@ end
 
 love.load = function()
   player = {x=0, y=0, vely=0, facing_right=true, animation=nil, is_alive=true}
+  start_position = {x=0, y=0}
   load_level("level1.lua")
 end
 
