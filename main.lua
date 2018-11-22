@@ -16,23 +16,30 @@ local pause_font = love.graphics.newFont("Boxy-Bold.ttf", 100)
 
 --------------------------------------------------------------
 -- Autdio:
-local sfx = function(p, ext)
-  ext = ext or "wav"
-  return love.audio.newSource(p .. "." .. ext, "static")
+local load_sfx = function()
+  local sfx = function(p, ext)
+    ext = ext or "wav"
+    return love.audio.newSource(p .. "." .. ext, "static")
+  end
+
+  local sounds = {}
+  sounds.jump = sfx("jump")
+  sounds.hardland = sfx("hurt")
+  sounds.semihurt = sfx("semihurt")
+  sounds.hurt = sfx("crash")
+  sounds.crash = sfx("crash2")
+  sounds.walljump = sfx("walljump")
+  sounds.land = sfx("land")
+  sounds.walk = sfx("step")
+  sounds.dash = sfx("dash")
+  sounds.dash_timeout = sfx("dash-timeout")
+  sounds.dash_ready = sfx("dash-ready")
+  sounds.fallout = sfx("jingles_NES00", "ogg")
+
+  return sounds
 end
 
-local sfx_jump = sfx("jump")
-local sfx_hardland = sfx("hurt")
-local sfx_semihurt = sfx("semihurt")
-local sfx_hurt = sfx("crash")
-local sfx_crash = sfx("crash2")
-local sfx_walljump = sfx("walljump")
-local sfx_land = sfx("land")
-local sfx_walk = sfx("step")
-local sfx_dash = sfx("dash")
-local sfx_dash_timeout = sfx("dash-timeout")
-local sfx_dash_ready = sfx("dash-ready")
-local sfx_fallout = sfx("jingles_NES00", "ogg")
+local sfx = load_sfx()
 
 local playsfx = function(s)
   s:play()
@@ -366,10 +373,10 @@ local player_update = function(dt)
       capture_y = true
       maxy = 0
       jump_timer = JUMP_TIME + 1
-      playsfx(sfx_dash_ready)
+      playsfx(sfx.dash_ready)
     else
       print("Too high vely: " .. str(player.vely))
-      playsfx(sfx_dash_timeout)
+      playsfx(sfx.dash_timeout)
     end
   end
 
@@ -380,7 +387,7 @@ local player_update = function(dt)
       if not is_walljumping then
         player.vely = -JUMP_SPEED
         if not input.old_input_jump then
-          playsfx(sfx_jump)
+          playsfx(sfx.jump)
         end
       else
         player.vely = -WALLJUMP
@@ -399,7 +406,7 @@ local player_update = function(dt)
     if player.dash_timer > DASH_TIMEOUT then
       print("dash timeout")
       player.dash_state = DASH_NONE
-      playsfx(sfx_dash_timeout)
+      playsfx(sfx.dash_timeout)
     end
   elseif player.dash_state == DASH_DASH then
     nop()
@@ -418,23 +425,23 @@ local player_update = function(dt)
 
       if player.vely > 900 then
         add_trauma(1.0)
-        playsfx(sfx_hurt)
+        playsfx(sfx.hurt)
         if has_stache then
           has_stache = false
           life = SHORT_STACHE_FIND
         end
       elseif player.vely > 700 then
         add_trauma(0.5)
-        playsfx(sfx_semihurt)
+        playsfx(sfx.semihurt)
         if has_stache then
           has_stache = false
           life = LONG_STACHE_FIND
         end
       elseif player.vely > 400 then
         add_trauma(0.3)
-        playsfx(sfx_hardland)
+        playsfx(sfx.hardland)
       else
-        playsfx(sfx_land)
+        playsfx(sfx.land)
       end
     end
     on_ground_timer = 0
@@ -512,7 +519,7 @@ local player_update = function(dt)
     if player.is_wallsliding and input.input_jump then
       player.is_wallsliding = false
       player.is_walljumping = true
-      playsfx(sfx_walljump)
+      playsfx(sfx.walljump)
       jump_timer = 0
       is_on_ground = false
       player.vely = WALLJUMP
@@ -530,7 +537,7 @@ local player_update = function(dt)
     end
   elseif player.dash_state == DASH_HOLD then
     if has_moved_hor and not input.last_moved_hor then
-      playsfx(sfx_dash)
+      playsfx(sfx.dash)
       if input_movement > 0 then
         player.facing_right = true
       else
@@ -549,7 +556,7 @@ local player_update = function(dt)
 
     if dash_collision_count > 0 then
       add_trauma(0.7)
-      playsfx(sfx_crash)
+      playsfx(sfx.crash)
       player.dash_state = DASH_NONE
       player.vely = DASH_JUMP_POWER
       local was_wall = math.abs(collision_data[1].normal.x) > 0.5
@@ -568,14 +575,14 @@ local player_update = function(dt)
     walk_timer = walk_timer + dt
     if walk_timer > WALK_STEP_TIME then
       walk_timer = walk_timer - WALK_STEP_TIME
-      playsfx(sfx_walk)
+      playsfx(sfx.walk)
     end
   end
 
   local world = level_gfx.layers["col"]
   if player.y > world.height * 32 then
     player.is_alive = false
-    playsfx(sfx_fallout)
+    playsfx(sfx.fallout)
   end
 
   -- determine player animation
