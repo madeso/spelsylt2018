@@ -134,7 +134,7 @@ local walk_timer = 0
 local nop = function() end
 local str = tostring
 
-xor = function(a,b)
+local xor = function(a,b)
     return not( not( a and not( a and b ) ) and not( b and not( a and b ) ) )
 end
 
