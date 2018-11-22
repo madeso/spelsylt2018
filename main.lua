@@ -52,6 +52,7 @@ end
 
 local FIXED_STEP = 1/60
 
+local WALLSLIDE_DUST_INTERVAL = 0.15
 local FALLOUT_TIME = 2
 local WIN_TIME = 1.5
 local LONG_STACHE_FIND = 9
@@ -130,6 +131,7 @@ input.last_moved_hor = false
 
 ----------------------------------------------------------------
 -- Gameplay:
+local dust_wallslide_timer = 0
 local fps = 0
 local jump_timer = 0
 local on_ground_timer = 0
@@ -284,6 +286,18 @@ local dust = love.graphics.newParticleSystem(sprites)
 dust:setParticleLifetime(0.5, 1)
 dust:setQuads(make_sprite(14), make_sprite(15), make_sprite(16), make_sprite(17))
 dust:setOffset(0, 0)
+
+local spawn_dust_at_feet = function()
+  local dx
+  local step = 15
+  if player.facing_right then
+    dx = step
+  else
+    dx = -step
+  end
+  dust:setPosition(player.x + dx, player.y)
+  dust:emit(1)
+end
 
 local dustwave = function(a, b)
   dust:setSpeed(300, 490)
@@ -613,6 +627,14 @@ local player_update = function(dt)
 
     player.is_wallsliding = sliding
     player.is_walljumping = false
+
+    if sliding then
+      dust_wallslide_timer = dust_wallslide_timer + dt
+      while dust_wallslide_timer > WALLSLIDE_DUST_INTERVAL do
+        spawn_dust_at_feet()
+        dust_wallslide_timer = dust_wallslide_timer - WALLSLIDE_DUST_INTERVAL
+      end
+    end
 
     if player.is_wallsliding and input.input_jump then
       player.is_wallsliding = false
