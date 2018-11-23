@@ -22,3 +22,5 @@ Day 9 (Tuesday): 3h. luacheck fixes and death timer.
 Day 10 (Wednesday): 3h. Improved pause screen and death timer. Fixed issue with heavy falldamage not beeing applied anymore, sounds, camera stays withing world and other things.
 
 Day 11 (Thursday): 4h. Improved sprites and level. Added dust particles and basic parallax background support. Also added head graphics.
+
+Day 12 (Friday): 3h. Merged restart and load level functions and fixed hot reloading when reloading map. Player drop mustache now when hurt.
