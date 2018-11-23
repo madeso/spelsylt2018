@@ -62,9 +62,8 @@ local stache_filter = function(_, other)
   end
 end
 
-local player_filter = function(item, other)
+local player_filter = function(_, other)
   if other.class then
-    print("filter: ", item, other)
     return false
   else
     return "slide"
@@ -84,6 +83,11 @@ local SHORT_STACHE_FIND = 5
 local PLAYER_SPEED = 200
 local GRAVITY = 1300
 local JUMP_SPEED = 250
+local STACHE_BOUNCE_MIN = 100
+local STACHE_OFFSET = -4
+local STACHE_GRAVITY = 100
+local STACHE_DX = 45
+local STACHE_BOUNCE_FACTOR = 0.8
 local JUMP_TIME = 0.4
 local ON_GROUND_REACTION = 0.1
 local GROUND_FRICTION = 3
@@ -380,8 +384,9 @@ local draw_debug_text = function()
   text("Trauma: " .. niceval(camera.trauma))
   text("Right: " .. str(player.facing_right))
   text("Reset timer: " .. niceval(player.reset_timer))
-
   text("Y: " .. niceval(player.y) .. " / " .. niceval(camera.y))
+  text("Stache: " .. niceval(stache.x) .. ", " .. niceval(stache.y) )
+  text("DY: " .. niceval(stache.dy))
 end
 
 local gids = {}
@@ -430,7 +435,7 @@ local load_level = function()
   world.level_gfx:bump_init(world.level_collision)
   stache.x = player.x
   stache.y = player.y
-  world.level_collision:add(stache, stache.x, stache.y, 16, 16)
+  world.level_collision:add(stache, stache.x, stache.y, 20, 16)
 
   -- reset data
   camera.time = 0
@@ -477,7 +482,24 @@ local onkey = function(key, down)
 end
 
 local stache_update = function(dt)
-  stache.x, stache.y = world.level_collision:move(stache, stache.x, stache.y + dt * 10, stache_filter)
+  if not stache.dy then stache.dy = 0 end
+  stache.dy = stache.dy + STACHE_GRAVITY * dt
+  local cols
+  local dx = STACHE_DX
+  if not stache.facing_right then
+    dx = -dx
+  end
+  stache.x, stache.y, _, cols = world.level_collision:move(stache, stache.x + dx * dt, stache.y, stache_filter)
+  if cols > 0 then
+    stache.facing_right = not stache.facing_right
+  end
+  stache.x, stache.y, _, cols = world.level_collision:move(stache, stache.x, stache.y + dt * stache.dy, stache_filter)
+  if cols > 0 then
+    stache.dy = -stache.dy * STACHE_BOUNCE_FACTOR
+    if stache.dy < 0 and math.abs(stache.dy) < STACHE_BOUNCE_MIN then
+      stache.dy = -STACHE_BOUNCE_MIN
+    end
+  end
 end
 
 local player_update = function(dt)
@@ -906,7 +928,7 @@ love.draw = function()
   if player.face then
     draw_animation(player.face.animation, player.x, player.y - 10, xor(player.facing_right, player.is_wallsliding))
   end
-  draw_animation(anim.stache, stache.x, stache.y, stache.facing_right)
+  draw_animation(anim.stache, stache.x + STACHE_OFFSET, stache.y, stache.facing_right)
   love.graphics.pop()
   if not has_stache then
     love.graphics.setFont(big_font)
