@@ -131,6 +131,7 @@ input.last_moved_hor = false
 
 ----------------------------------------------------------------
 -- Gameplay:
+local current_level = "level1.lua"
 local stache = {x=0, y=0}
 local dust_wallslide_timer = 0
 local fps = 0
@@ -386,10 +387,10 @@ end
 
 load_spawn_positions()
 
-local load_level = function(path)
-  print("loading level " .. path)
+local load_level = function()
+  print("loading level " .. current_level)
   if not player then player = {} end
-  world.level_gfx = sti(path, {"bump"})
+  world.level_gfx = sti(current_level, {"bump"})
   world.level_collision = bump.newWorld(32 * 2)
   world.col = world.level_gfx.layers["col"]
   camera.time = 0
@@ -404,6 +405,24 @@ local load_level = function(path)
   -- todo: setup player collision box
   world.level_collision:add(player, player.x, player.y, 32, 32)
   world.level_gfx:bump_init(world.level_collision)
+
+  -- reset data
+  camera.time = 0
+  has_stache = true
+  player.x = start_position.x
+  player.y = start_position.y
+  world.level_collision:update(player, player.x, player.y)
+  camera.target_x = player.x
+  camera.target_y = player.y
+  camera.x = player.x
+  camera.y = player.y
+  player.velx = 0
+  player.vely = 0
+  player.facing_right = true
+  jump_timer = JUMP_TIME + 1
+  player.reset_timer = 0
+  player.is_alive = true
+  player.next_level = false
 end
 
 
@@ -429,25 +448,6 @@ local onkey = function(key, down)
   if key == "c" then
     input.input_dash = down
   end
-end
-
-local reset_world = function()
-  camera.time = 0
-  has_stache = true
-  player.x = start_position.x
-  player.y = start_position.y
-  world.level_collision:update(player, player.x, player.y)
-  camera.target_x = player.x
-  camera.target_y = player.y
-  camera.x = player.x
-  camera.y = player.y
-  player.velx = 0
-  player.vely = 0
-  player.facing_right = true
-  jump_timer = JUMP_TIME + 1
-  player.reset_timer = 0
-  player.is_alive = true
-  player.next_level = false
 end
 
 local player_update = function(dt)
@@ -919,7 +919,7 @@ love.update = function(dt)
       if not player.is_alive or player.next_level then
         player.reset_timer = player.reset_timer - FIXED_STEP
         if player.reset_timer < 0 then
-          reset_world()
+          load_level()
         end
       end
       player_update(FIXED_STEP)
@@ -952,7 +952,7 @@ if not player then
 end
 
 if not world.level_gfx then
-  load_level("level1.lua")
+  load_level()
 end
 
 camera.x = player.x
