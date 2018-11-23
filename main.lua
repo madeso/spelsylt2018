@@ -481,6 +481,13 @@ local onkey = function(key, down)
   end
 end
 
+local display_stache = function()
+  stache.x, stache.y = player.x, player.y
+  world.level_collision:update(stache, stache.x, stache.y)
+  stache.facing_right = player.facing_right
+  stache.dy = -STACHE_BOUNCE_MIN * 1.5
+end
+
 local stache_update = function(dt)
   if not stache.dy then stache.dy = 0 end
   stache.dy = stache.dy + STACHE_GRAVITY * dt
@@ -595,6 +602,7 @@ local player_update = function(dt)
         if has_stache then
           has_stache = false
           life = SHORT_STACHE_FIND
+          display_stache()
         end
       elseif player.vely > 700 then
         add_trauma(0.5)
@@ -602,6 +610,7 @@ local player_update = function(dt)
         if has_stache then
           has_stache = false
           life = LONG_STACHE_FIND
+          display_stache()
         end
       elseif player.vely > 400 then
         add_trauma(0.3)
@@ -928,7 +937,9 @@ love.draw = function()
   if player.face then
     draw_animation(player.face.animation, player.x, player.y - 10, xor(player.facing_right, player.is_wallsliding))
   end
-  draw_animation(anim.stache, stache.x + STACHE_OFFSET, stache.y, stache.facing_right)
+  if not has_stache then
+    draw_animation(anim.stache, stache.x + STACHE_OFFSET, stache.y, stache.facing_right)
+  end
   love.graphics.pop()
   if not has_stache then
     love.graphics.setFont(big_font)
@@ -975,7 +986,9 @@ love.update = function(dt)
         end
       end
       player_update(FIXED_STEP)
-      stache_update(FIXED_STEP)
+      if not has_stache then
+        stache_update(FIXED_STEP)
+      end
       camera_update(FIXED_STEP)
       input.old_input_jump = input.input_jump
       input.old_input_dash = input.input_dash
