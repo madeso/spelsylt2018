@@ -131,6 +131,7 @@ input.last_moved_hor = false
 
 ----------------------------------------------------------------
 -- Gameplay:
+local stache = {x=0, y=0}
 local dust_wallslide_timer = 0
 local fps = 0
 local jump_timer = 0
@@ -279,6 +280,7 @@ anim.halt = make_animation({8}, 1)
 anim.wall = make_animation({9}, 1)
 anim.face = make_animation({10}, 1)
 anim.no_stache = make_animation({11}, 1)
+anim.stache = make_animation({12, 13, 14}, 0.2)
 
 --------------------------------------------------------
 -- Dust:
@@ -874,6 +876,7 @@ love.draw = function()
   if player.face then
     draw_animation(player.face.animation, player.x, player.y - 10, xor(player.facing_right, player.is_wallsliding))
   end
+  draw_animation(anim.stache, stache.x, stache.y, stache.facing_right)
   love.graphics.pop()
   if not has_stache then
     love.graphics.setFont(big_font)
@@ -911,6 +914,7 @@ love.update = function(dt)
   while dtsum > FIXED_STEP do
     dtsum = dtsum - FIXED_STEP
     dust:update(FIXED_STEP)
+    step_animation(anim.stache, dt)
     if not is_paused() then
       if not player.is_alive or player.next_level then
         player.reset_timer = player.reset_timer - FIXED_STEP
@@ -955,3 +959,5 @@ camera.x = player.x
 camera.y = player.y
 camera.target_x = player.x
 camera.target_y = player.y
+stache.x = player.x
+stache.y = player.y
