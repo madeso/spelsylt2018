@@ -849,7 +849,7 @@ love.draw = function()
   love.graphics.translate(window_width/2, window_height/2)
   love.graphics.rotate(angle)
   love.graphics.translate(-window_width/2, -window_height/2)
-  love.graphics.translate(-camera_x, -camera_y)
+  love.graphics.translate(math.floor(-camera_x), math.floor(-camera_y))
   love.graphics.scale(zoom, zoom)
   if input.debug_draw then
     bump_debug.draw(world.level_collision)
@@ -860,7 +860,7 @@ love.draw = function()
     local px = camera.x / (world.col.width * 32)
     local py = camera.y / (world.col.height * 32)
     local extent = 640
-    love.graphics.translate(px * extent, py * extent / 2)
+    love.graphics.translate(math.floor(px * extent), math.floor(py * extent / 2))
     world.level_gfx:drawLayer(para)
     love.graphics.pop()
   end
