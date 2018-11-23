@@ -951,3 +951,7 @@ if not world.level_gfx then
   load_level("level1.lua")
 end
 
+camera.x = player.x
+camera.y = player.y
+camera.target_x = player.x
+camera.target_y = player.y
