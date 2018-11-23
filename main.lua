@@ -47,6 +47,30 @@ local sfx = load_sfx()
 local playsfx = function(s)
   s:play()
 end
+
+--------------------------------------------------------------
+-- Class definitions
+local class = {}
+class.PLAYER = 1
+class.STACHE = 2
+
+local stache_filter = function(_, other)
+  if other.class then
+    return false
+  else
+    return "slide"
+  end
+end
+
+local player_filter = function(item, other)
+  if other.class then
+    print("filter: ", item, other)
+    return false
+  else
+    return "slide"
+  end
+end
+
 --------------------------------------------------------------
 -- Tweaks:
 
@@ -132,7 +156,6 @@ input.last_moved_hor = false
 ----------------------------------------------------------------
 -- Gameplay:
 local current_level = "level1.lua"
-local stache = {x=0, y=0}
 local dust_wallslide_timer = 0
 local fps = 0
 local jump_timer = 0
@@ -405,6 +428,9 @@ local load_level = function()
   -- todo: setup player collision box
   world.level_collision:add(player, player.x, player.y, 32, 32)
   world.level_gfx:bump_init(world.level_collision)
+  stache.x = player.x
+  stache.y = player.y
+  world.level_collision:add(stache, stache.x, stache.y, 16, 16)
 
   -- reset data
   camera.time = 0
@@ -448,6 +474,10 @@ local onkey = function(key, down)
   if key == "c" then
     input.input_dash = down
   end
+end
+
+local stache_update = function(dt)
+  stache.x, stache.y = world.level_collision:move(stache, stache.x, stache.y + dt * 10, stache_filter)
 end
 
 local player_update = function(dt)
@@ -529,7 +559,7 @@ local player_update = function(dt)
   end
 
   ----------- vertical movment:
-  player.x, player.y, _, ground_collision_count = world.level_collision:move(player, player.x, player.y + player.vely*dt)
+  player.x, player.y, _, ground_collision_count = world.level_collision:move(player, player.x, player.y + player.vely*dt, player_filter)
   local is_on_ground = ground_collision_count > 0 and player.vely >= 0
   player.is_on_ground = is_on_ground
   if is_on_ground then
@@ -611,7 +641,7 @@ local player_update = function(dt)
     end
 
     local hor_collision_count
-    player.x, player.y, _, hor_collision_count = world.level_collision:move(player, player.x + player.velx * PLAYER_SPEED * dt, player.y)
+    player.x, player.y, _, hor_collision_count = world.level_collision:move(player, player.x + player.velx * PLAYER_SPEED * dt, player.y, player_filter)
     local touches_wall = hor_collision_count > 0
 
     if touches_wall then
@@ -675,7 +705,7 @@ local player_update = function(dt)
       dash_dx = -dash_dx
     end
     local collision_data
-    player.x, player.y, collision_data, dash_collision_count = world.level_collision:move(player, player.x + dash_dx * dt, player.y + DASH_DY * dt)
+    player.x, player.y, collision_data, dash_collision_count = world.level_collision:move(player, player.x + dash_dx * dt, player.y + DASH_DY * dt, player_filter)
 
     if dash_collision_count > 0 then
       add_trauma(0.7)
@@ -923,6 +953,7 @@ love.update = function(dt)
         end
       end
       player_update(FIXED_STEP)
+      stache_update(FIXED_STEP)
       camera_update(FIXED_STEP)
       input.old_input_jump = input.input_jump
       input.old_input_dash = input.input_dash
@@ -951,6 +982,11 @@ if not player then
   player.__tostring = function() return "struct Player" end
 end
 
+if not stache then
+  stache = {x=0, y=0}
+  stache.__tostring = function() return "struct Stache" end
+end
+
 if not world.level_gfx then
   load_level()
 end
@@ -961,3 +997,6 @@ camera.target_x = player.x
 camera.target_y = player.y
 stache.x = player.x
 stache.y = player.y
+
+player.class = class.PLAYER
+stache.class = class.STACHE
