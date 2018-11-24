@@ -307,23 +307,24 @@ end
 -------------------------------------------------------
 -- Animations:
 local anim = {}
-anim.idle = make_animation({1}, 1)
-anim.run = make_animation({3, 4, 5, 4}, 0.055)
-anim.jump = make_animation({6}, 1)
-anim.fall = make_animation({7}, 1)
-anim.dash_hold = make_animation({2}, 1)
-anim.dash = make_animation({3}, 1)
-anim.halt = make_animation({8}, 1)
-anim.wall = make_animation({9}, 1)
-anim.face = make_animation({10}, 1)
-anim.no_stache = make_animation({11}, 1)
-anim.stache = make_animation({12, 13, 14}, 0.2)
+-- animations are based on 1, sprites are based on 0
+anim.idle = make_animation({1, 2}, 0.45)
+anim.run = make_animation({7, 8, 9, 8}, 0.055)
+anim.jump = make_animation({10, 11}, 0.3)
+anim.fall = make_animation({12, 13}, 0.3)
+anim.dash_hold = make_animation({3, 4}, 0.3)
+anim.dash = make_animation({5, 6}, 0.3)
+anim.halt = make_animation({14}, 1)
+anim.wall = make_animation({15}, 1)
+anim.face = make_animation({16}, 1)
+anim.no_stache = make_animation({17, 17, 17, 18}, 0.25)
+anim.stache = make_animation({19, 29, 21}, 0.2)
 
 --------------------------------------------------------
 -- Dust:
 local dust = love.graphics.newParticleSystem(sprites)
 dust:setParticleLifetime(0.5, 1)
-dust:setQuads(make_sprite(14), make_sprite(15), make_sprite(16), make_sprite(17))
+dust:setQuads(make_sprite(21), make_sprite(22), make_sprite(23), make_sprite(24))
 dust:setOffset(0, 0)
 
 local spawn_dust_at_feet = function()
