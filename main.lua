@@ -493,6 +493,7 @@ local display_stache = function()
   world.level_collision:update(stache, stache.x, stache.y)
   stache.facing_right = player.facing_right
   stache.dy = -STACHE_BOUNCE_MIN * 1.5
+  stache.timer = 0
 end
 
 local stache_update = function(dt)
@@ -503,6 +504,7 @@ local stache_update = function(dt)
   if not stache.facing_right then
     dx = -dx
   end
+  stache.timer = stache.timer + dt
   stache.x, stache.y, _, cols = world.level_collision:move(stache, stache.x + dx * dt, stache.y, stache_filter)
   if cols > 0 then
     stache.facing_right = not stache.facing_right
@@ -521,7 +523,14 @@ local player_update = function(dt)
     local r = false
     for _, c in ipairs(objects) do
       if c.other.class then
-        print("player collided with " .. str(c.other))
+        if c.other.class == class.STACHE then
+          if stache.timer > 0.5 then
+            print("player got stache")
+            player.has_stache = true
+          end
+        else
+          print("player collided with " .. str(c.other))
+        end
       elseif not c.other.class then
         r = true
       end
