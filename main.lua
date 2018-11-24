@@ -518,6 +518,11 @@ local stache_update = function(dt)
     end
   end
 end
+local kill_player = function()
+  player.is_alive = false
+  player.reset_timer = FALLOUT_TIME
+  playsfx(sfx.fallout)
+end
 
 local player_update = function(dt)
   local handle_player_collision = function(objects)
@@ -549,8 +554,7 @@ local player_update = function(dt)
   if not player.has_stache then
     life = life - dt
     if life < 0 then
-      player.has_stache = true
-      print("Player died...")
+      kill_player()
     end
   end
 
@@ -821,9 +825,7 @@ local player_update = function(dt)
   end
 
   if player.y > world.col.height * 32 then
-    player.is_alive = false
-    player.reset_timer = FALLOUT_TIME
-    playsfx(sfx.fallout)
+    kill_player()
   end
 
   if player.x > world.col.width * 32 then
@@ -972,7 +974,7 @@ love.draw = function()
     draw_animation(anim.stache, stache.x + STACHE_OFFSET, stache.y, stache.facing_right)
   end
   love.graphics.pop()
-  if not player.has_stache then
+  if not player.has_stache and player.is_alive and not player.next_level then
     love.graphics.setFont(big_font)
     local alpha = {r=255, g=255, b=255, a=180}
     local a = life - math.floor(life)
@@ -1008,7 +1010,6 @@ love.update = function(dt)
   while dtsum > FIXED_STEP do
     dtsum = dtsum - FIXED_STEP
     dust:update(FIXED_STEP)
-    step_animation(anim.stache, dt)
     if not is_paused() then
       if not player.is_alive or player.next_level then
         player.reset_timer = player.reset_timer - FIXED_STEP
@@ -1017,8 +1018,9 @@ love.update = function(dt)
         end
       end
       player_update(FIXED_STEP)
-      if not player.has_stache then
+      if not player.has_stache and player.is_alive then
         stache_update(FIXED_STEP)
+        step_animation(anim.stache, dt)
       end
       camera_update(FIXED_STEP)
       input.old_input_jump = input.input_jump
