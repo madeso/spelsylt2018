@@ -510,7 +510,13 @@ local stache_update = function(dt)
 end
 
 local player_update = function(dt)
-  local ground_collision_count
+  local handle_player_collision = function(objects, count)
+    if count > 0 then
+      return true
+    else
+      return false
+    end
+  end
 
   if not player.is_alive then
     return
@@ -588,8 +594,11 @@ local player_update = function(dt)
   end
 
   ----------- vertical movment:
-  player.x, player.y, _, ground_collision_count = world.level_collision:move(player, player.x, player.y + player.vely*dt, player_filter)
-  local is_on_ground = ground_collision_count > 0 and player.vely >= 0
+  local ground_collision_objects
+  local the_ground_collision_count
+  player.x, player.y, ground_collision_objects, the_ground_collision_count = world.level_collision:move(player, player.x, player.y + player.vely*dt, player_filter)
+  local collided_with_y = handle_player_collision(ground_collision_objects, the_ground_collision_count)
+  local is_on_ground = collided_with_y and player.vely >= 0
   player.is_on_ground = is_on_ground
   if is_on_ground then
     if player.vely > 100 then
@@ -630,7 +639,7 @@ local player_update = function(dt)
   if is_on_ground then
     capture_y = false
   end
-  if ground_collision_count > 0 then
+  if collided_with_y then
     player.vely = 0
     jump_timer = JUMP_TIME + 1
   end
@@ -671,9 +680,10 @@ local player_update = function(dt)
       end
     end
 
-    local hor_collision_count
-    player.x, player.y, _, hor_collision_count = world.level_collision:move(player, player.x + player.velx * PLAYER_SPEED * dt, player.y, player_filter)
-    local touches_wall = hor_collision_count > 0
+    local the_hor_collision_count
+    local hor_collision_objects
+    player.x, player.y, hor_collision_objects, the_hor_collision_count = world.level_collision:move(player, player.x + player.velx * PLAYER_SPEED * dt, player.y, player_filter)
+    local touches_wall = handle_player_collision(hor_collision_objects, the_hor_collision_count)
 
     if touches_wall then
       player.velx = 0
@@ -730,15 +740,16 @@ local player_update = function(dt)
       player.dash_state = DASH_DASH
     end
   elseif player.dash_state == DASH_DASH then
-    local dash_collision_count
     local dash_dx = DASH_DX
     if not player.facing_right then
       dash_dx = -dash_dx
     end
     local collision_data
-    player.x, player.y, collision_data, dash_collision_count = world.level_collision:move(player, player.x + dash_dx * dt, player.y + DASH_DY * dt, player_filter)
+    local the_dash_collision_count
+    player.x, player.y, collision_data, the_dash_collision_count = world.level_collision:move(player, player.x + dash_dx * dt, player.y + DASH_DY * dt, player_filter)
+    local collided_with_dash = handle_player_collision(collision_data, the_dash_collision_count)
 
-    if dash_collision_count > 0 then
+    if collided_with_dash then
       add_trauma(0.7)
       playsfx(sfx.crash)
       camera.target_x = player.x
@@ -751,7 +762,6 @@ local player_update = function(dt)
       else
         player.velx = -1
       end
-      print("dash done")
       if was_wall then
         add_dust_wall()
       else
