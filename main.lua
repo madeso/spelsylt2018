@@ -1035,7 +1035,7 @@ love.update = function(dt)
       _, input.last_moved_hor = plusminus(input.input_left, input.input_right)
     end
   end
-  require("lurker").update()
+  -- require("lurker").update()
 end
 
 love.keypressed = function(key)
