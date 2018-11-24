@@ -64,7 +64,15 @@ end
 
 local player_filter = function(_, other)
   if other.class then
-    return false
+    if other.class == class.STACHE then
+      if not player.has_stache then
+        return "cross"
+      else
+        return false
+      end
+    else
+      return false
+    end
   else
     return "slide"
   end
@@ -166,7 +174,6 @@ local jump_timer = 0
 local on_ground_timer = 0
 local is_walljumping = false
 local camera = {x=0, y=0, trauma=0, time=0}
-local has_stache = true
 local life = 0
 local walk_timer = 0
 
@@ -439,7 +446,7 @@ local load_level = function()
 
   -- reset data
   camera.time = 0
-  has_stache = true
+  player.has_stache = true
   player.x = start_position.x
   player.y = start_position.y
   world.level_collision:update(player, player.x, player.y)
@@ -525,10 +532,10 @@ local player_update = function(dt)
   if player.next_level then
     return
   end
-  if not has_stache then
+  if not player.has_stache then
     life = life - dt
     if life < 0 then
-      has_stache = true
+      player.has_stache = true
       print("Player died...")
     end
   end
@@ -608,16 +615,16 @@ local player_update = function(dt)
       if player.vely > 900 then
         add_trauma(1.0)
         playsfx(sfx.hurt)
-        if has_stache then
-          has_stache = false
+        if player.has_stache then
+          player.has_stache = false
           life = SHORT_STACHE_FIND
           display_stache()
         end
       elseif player.vely > 700 then
         add_trauma(0.5)
         playsfx(sfx.semihurt)
-        if has_stache then
-          has_stache = false
+        if player.has_stache then
+          player.has_stache = false
           life = LONG_STACHE_FIND
           display_stache()
         end
@@ -822,7 +829,7 @@ local player_update = function(dt)
 
   -- set face animation
   if not player.face then player.face = {} end
-  if has_stache then
+  if player.has_stache then
     set_animation(player.face, anim.face, state.FACE)
   else
     set_animation(player.face, anim.no_stache, state.NO_STACHE)
@@ -947,11 +954,11 @@ love.draw = function()
   if player.face then
     draw_animation(player.face.animation, player.x, player.y - 10, xor(player.facing_right, player.is_wallsliding))
   end
-  if not has_stache then
+  if not player.has_stache then
     draw_animation(anim.stache, stache.x + STACHE_OFFSET, stache.y, stache.facing_right)
   end
   love.graphics.pop()
-  if not has_stache then
+  if not player.has_stache then
     love.graphics.setFont(big_font)
     local alpha = {r=255, g=255, b=255, a=180}
     local a = life - math.floor(life)
@@ -996,7 +1003,7 @@ love.update = function(dt)
         end
       end
       player_update(FIXED_STEP)
-      if not has_stache then
+      if not player.has_stache then
         stache_update(FIXED_STEP)
       end
       camera_update(FIXED_STEP)
@@ -1045,3 +1052,4 @@ stache.y = player.y
 
 player.class = class.PLAYER
 stache.class = class.STACHE
+player.has_stache = true
