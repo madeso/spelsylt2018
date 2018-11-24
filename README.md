@@ -24,3 +24,5 @@ Day 10 (Wednesday): 3h. Improved pause screen and death timer. Fixed issue with 
 Day 11 (Thursday): 4h. Improved sprites and level. Added dust particles and basic parallax background support. Also added head graphics.
 
 Day 12 (Friday): 3h. Merged restart and load level functions and fixed hot reloading when reloading map. Player drop mustache now when hurt.
+
+Day 13 (Saturday): 2h. Can pickup stache now. Gameover if it's not picked up in the timeframe.
