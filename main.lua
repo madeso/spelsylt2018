@@ -156,6 +156,7 @@ local DASH_DASH = 2
 -- Input:
 local input = {}
 input.debug_draw = false
+input.debug_print = false
 input.input_left = false
 input.input_right = false
 input.input_jump = false
@@ -478,8 +479,11 @@ local onkey = function(key, down)
   if key == "p" and down then
     input.game_is_paused = not input.game_is_paused
   end
-  if key == "tab" and down then
+  if key == "1" and down then
     input.debug_draw = not input.debug_draw
+  end
+  if key == "2" and down then
+    input.debug_print = not input.debug_print
   end
   if key == "x" and down then
     add_trauma(0.3)
@@ -998,7 +1002,9 @@ love.draw = function()
     love.graphics.setFont(pause_font)
     draw_centered_text("good job")
   end
-  draw_debug_text()
+  if input.debug_print then
+    draw_debug_text()
+  end
 end
 
 local dtsum = 0
