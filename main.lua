@@ -517,12 +517,16 @@ local stache_update = function(dt)
 end
 
 local player_update = function(dt)
-  local handle_player_collision = function(objects, count)
-    if count > 0 then
-      return true
-    else
-      return false
+  local handle_player_collision = function(objects)
+    local r = false
+    for _, c in ipairs(objects) do
+      if c.other.class then
+        print("player collided with " .. str(c.other))
+      elseif not c.other.class then
+        r = true
+      end
     end
+    return r
   end
 
   if not player.is_alive then
