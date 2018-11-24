@@ -181,7 +181,6 @@ local walk_timer = 0
 
 -----------------------------------------------------------
 -- Util functions:
-local nop = function() end
 local str = tostring
 
 local xor = function(a,b)
@@ -318,7 +317,7 @@ anim.halt = make_animation({14}, 1)
 anim.wall = make_animation({15}, 1)
 anim.face = make_animation({16}, 1)
 anim.no_stache = make_animation({17, 17, 17, 18}, 0.25)
-anim.stache = make_animation({19, 29, 21}, 0.2)
+anim.stache = make_animation({19, 20, 21}, 0.2)
 
 --------------------------------------------------------
 -- Dust:
@@ -326,6 +325,14 @@ local dust = love.graphics.newParticleSystem(sprites)
 dust:setParticleLifetime(0.5, 1)
 dust:setQuads(make_sprite(21), make_sprite(22), make_sprite(23), make_sprite(24))
 dust:setOffset(0, 0)
+
+local dashes = love.graphics.newParticleSystem(sprites)
+dashes:setParticleLifetime(0.5, 1)
+dashes:setQuads(make_sprite(25))
+dashes:setOffset(0,0)
+dashes:setLinearDamping(0.1)
+dashes:setSpeed(3, 5)
+dashes:setSizes(0.5, 1.0)
 
 local spawn_dust_at_feet = function()
   local dx
@@ -617,7 +624,8 @@ local player_update = function(dt)
       playsfx(sfx.dash_timeout)
     end
   elseif player.dash_state == DASH_DASH then
-    nop()
+    dashes:moveTo(player.x, player.y)
+    dashes:emit(1)
   else
     print("Unknown dash state: " .. str(player.dash_state))
     player.dash_state = DASH_NONE
@@ -972,6 +980,7 @@ love.draw = function()
   end
   draw_animation(player.animation, player.x, player.y, player.facing_right)
   love.graphics.draw(dust, 0, 0)
+  -- love.graphics.draw(dashes, 0,0)
   if player.face then
     draw_animation(player.face.animation, player.x, player.y - 10, xor(player.facing_right, player.is_wallsliding))
   end
@@ -1017,6 +1026,7 @@ love.update = function(dt)
   while dtsum > FIXED_STEP do
     dtsum = dtsum - FIXED_STEP
     dust:update(FIXED_STEP)
+    dashes:update(FIXED_STEP)
     if not is_paused() then
       if not player.is_alive or player.next_level then
         player.reset_timer = player.reset_timer - FIXED_STEP
