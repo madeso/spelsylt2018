@@ -38,6 +38,7 @@ local load_sfx = function()
   sounds.fallout = sfx("jingles_NES00", "ogg")
   sounds.win = sfx("jingles_NES03", "ogg")
   sounds.change_dir = sfx("changedir")
+  sounds.pickup_stache = sfx("pickup-stache")
 
   return sounds
 end
@@ -525,7 +526,7 @@ local player_update = function(dt)
       if c.other.class then
         if c.other.class == class.STACHE then
           if stache.timer > 0.5 then
-            print("player got stache")
+            playsfx(sfx.pickup_stache)
             player.has_stache = true
           end
         else
