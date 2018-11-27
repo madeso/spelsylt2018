@@ -327,12 +327,20 @@ dust:setQuads(make_sprite(21), make_sprite(22), make_sprite(23), make_sprite(24)
 dust:setOffset(0, 0)
 
 local dashes = love.graphics.newParticleSystem(sprites)
-dashes:setParticleLifetime(0.5, 1)
+dashes:setParticleLifetime(2.5, 3)
 dashes:setQuads(make_sprite(25))
-dashes:setOffset(0,0)
-dashes:setLinearDamping(0.1)
-dashes:setSpeed(3, 5)
-dashes:setSizes(0.5, 1.0)
+dashes:setOffset(16,16)
+dashes:setLinearDamping(0.01)
+dashes:setSpeed(3, 13)
+dashes:setRotation(0, math.pi / 4)
+dashes:setSpin(0, math.pi / 4)
+dashes:setSpinVariation(1)
+dashes:setSizes(0.5, 2.0)
+dashes:setSpread(math.pi * 2)
+dashes:setEmissionArea("normal", 5, 5)
+local pwhite = {1, 1, 1, 1}
+local ptrans = {1, 1, 1, 0}
+dashes:setColors(pwhite, pwhite, pwhite, ptrans)
 
 local spawn_dust_at_feet = function()
   local dx
@@ -625,7 +633,7 @@ local player_update = function(dt)
     end
   elseif player.dash_state == DASH_DASH then
     dashes:moveTo(player.x, player.y)
-    dashes:emit(1)
+    dashes:emit(2)
   else
     print("Unknown dash state: " .. str(player.dash_state))
     player.dash_state = DASH_NONE
@@ -978,9 +986,9 @@ love.draw = function()
   if detail_layer then
     world.level_gfx:drawLayer(detail_layer)
   end
+  love.graphics.draw(dashes, 0,0)
   draw_animation(player.animation, player.x, player.y, player.facing_right)
   love.graphics.draw(dust, 0, 0)
-  love.graphics.draw(dashes, 0,0)
   if player.face then
     draw_animation(player.face.animation, player.x, player.y - 10, xor(player.facing_right, player.is_wallsliding))
   end
