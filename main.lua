@@ -980,7 +980,7 @@ love.draw = function()
   end
   draw_animation(player.animation, player.x, player.y, player.facing_right)
   love.graphics.draw(dust, 0, 0)
-  -- love.graphics.draw(dashes, 0,0)
+  love.graphics.draw(dashes, 0,0)
   if player.face then
     draw_animation(player.face.animation, player.x, player.y - 10, xor(player.facing_right, player.is_wallsliding))
   end
@@ -1045,7 +1045,7 @@ love.update = function(dt)
       _, input.last_moved_hor = plusminus(input.input_left, input.input_right)
     end
   end
-  -- require("lurker").update()
+  require("lurker").update()
 end
 
 love.keypressed = function(key)
