@@ -26,3 +26,9 @@ Day 11 (Thursday): 4h. Improved sprites and level. Added dust particles and basi
 Day 12 (Friday): 3h. Merged restart and load level functions and fixed hot reloading when reloading map. Player drop mustache now when hurt.
 
 Day 13 (Saturday): 4h. Can pickup stache now. Gameover if it's not picked up in the timeframe. Fixed sprites, started working on particles on the dash, but wasn't able to complete it withing the timeframe of the competition.
+
+Day 14 (Sunday): End of jam. Nothing done.
+
+Day 15 (Monday): Nothing.
+
+Day 16 (Tuesday): 1h. Kinda working particle system for the dash, might need some more tweaking.
